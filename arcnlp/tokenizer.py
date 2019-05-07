@@ -7,6 +7,7 @@ from pygtrie import Trie
 class JiebaTokenizer(object):
     def __init__(self, user_dict=None):
         self.t = posseg.POSTokenizer()
+        self.t.initialize()
         self.trie = Trie()
         if user_dict:
             self.load_user_dict(user_dict)

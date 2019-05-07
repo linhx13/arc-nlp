@@ -10,11 +10,9 @@ class JiebaTokenizer(object):
     def __init__(self, vocab, user_dict=None):
         self.vocab = vocab
         self.t = tokenizer.JiebaTokenizer(user_dict)
-
-        Token.set_extension("pos", default=None)
+        Token.set_extension("pos", default=None, force=True)
 
     def __call__(self, text):
-        import sys; print('FUCK, text: %s' % text, file=sys.stderr)
         terms = self.t(text)
         words = [x.word for x in terms]
         spaces = [False] * len(words)
