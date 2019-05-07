@@ -11,12 +11,17 @@ class JiebaTokenizer(object):
         self.vocab = vocab
         self.t = tokenizer.JiebaTokenizer(user_dict)
 
+        Token.set_extension("pos", default=None)
+
     def __call__(self, text):
         import sys; print('FUCK, text: %s' % text, file=sys.stderr)
         terms = self.t(text)
         words = [x.word for x in terms]
         spaces = [False] * len(words)
-        return Doc(self.vocab, words=words, spaces=spaces)
+        doc = Doc(self.vocab, words=words, spaces=spaces)
+        for idx, token in enumerate(doc):
+            token._.set('pos', terms[idx].flag)
+        return doc
 
 
 class Chinese(zh.Chinese):

@@ -19,12 +19,13 @@ class TestChinese(unittest.TestCase):
             print(x)
 
     def test_user_dict(self):
-        # nlp = Chinese()
-        # nlp.tokenizer = JiebaTokenizer(nlp.vocab, user_dict='./user_dict.txt')
-        nlp = zh.Chinese()
+        # nlp = zh.Chinese()
+        nlp = Chinese()
+        nlp.tokenizer = JiebaTokenizer(nlp.vocab, user_dict='./user_dict.txt')
         doc = nlp("这个乒乓球拍卖多少？")
         for x in doc:
             print(x)
+            print(x._.pos)
 
 
 if __name__ == '__main__':
