@@ -25,3 +25,12 @@ class JiebaTokenizer(object):
 class Chinese(zh.Chinese):
     def make_doc(self, text):
         return self.tokenizer(text)
+
+
+def create_chinese(user_dict=None):
+    if user_dict:
+        nlp = Chinese()
+        nlp.tokenizer = JiebaTokenizer(vocab=nlp.vocab, user_dict=user_dict)
+    else:
+        nlp = zh.Chinese()
+    return nlp

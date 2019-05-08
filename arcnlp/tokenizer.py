@@ -24,11 +24,13 @@ class JiebaTokenizer(object):
             arr = line.split('=', 1)
             key = arr[0].strip()
             if len(arr) > 1 and len(arr[1].strip()) > 0:
-                value = [x.strip() for x in arr[1].strip().split()]
+                value = [x for x in arr[1].strip().split()]
+                assert len(key) == sum(len(x) for x in value)
             else:
                 value = [key]
             seg_dict[key] = value
             self.t.tokenizer.add_word(key, 100)
+        # jieba一定会切分英文串，对于英文还需要trie树来合并一下
         for key, value in seg_dict.items():
             self.trie[self.t.tokenizer.lcut(key)] = value
 

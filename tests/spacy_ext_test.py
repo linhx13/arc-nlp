@@ -22,7 +22,11 @@ class TestChinese(unittest.TestCase):
             print(x)
 
     def test_user_dict(self):
-        doc = self.my_nlp("这个乒乓球拍卖多少？")
+        s = "这个乒乓球拍卖多少？"
+        # for i in range(200000):
+        #     ss = '%s%d' % (s, i)
+        #     doc = self.my_nlp("这个乒乓球拍卖多少？")
+        doc = self.my_nlp(s)
         for x in doc:
             print(x)
             print(x._.pos)
