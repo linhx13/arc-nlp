@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 
 import unittest
-import sys
+import os
 
-sys.path.append("../")
 from arcnlp.tokenizer import JiebaTokenizer
+
+PWD = os.path.dirname(os.path.abspath(__file__))
 
 
 class TestTokenizer(unittest.TestCase):
     def setUp(self):
-        self.tokenizer = JiebaTokenizer(user_dict='./user_dict.txt')
+        self.tokenizer = JiebaTokenizer(
+            user_dict=os.path.join(PWD, 'user_dict.txt'))
 
     def test_simple(self):
         s = "这个乒乓球拍卖多少？"
@@ -21,3 +23,4 @@ class TestTokenizer(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
