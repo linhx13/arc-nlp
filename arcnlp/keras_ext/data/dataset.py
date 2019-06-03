@@ -17,7 +17,7 @@ class Dataset(object):
 
     sort_key = None
 
-    def __init__(self, examples, fields, filter_pred=None, lazy=False):
+    def __init__(self, examples, fields, filter_pred=None):
         """Create a data from a list of Examples and Fields.
 
         Args:
@@ -28,7 +28,6 @@ class Dataset(object):
             filter_pred (callable or None): use onley examples for which
                 filter_pred(example) is True, or use all examples if None.
                 Default is None.
-            lazy: Whether lazy loading examples.
         """
         if filter_pred is not None:
             make_list = isinstance(examples, list)

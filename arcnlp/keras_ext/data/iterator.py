@@ -25,7 +25,7 @@ class Iterator(object):
             examples with similar lengths and minimize padding. The sort_key
             provided to the Iterator constructor overrides the sort_key
             attribute of the Dataset, or defers to it if None.
-        tran: Whether the iterator represents a train set.
+        train: Whether the iterator represents a train set.
         repeat: Whether to repeat the iterator for multiple epochs. Default:
             False.
         shuffle: Whether to shuffle exmples between epochs.
