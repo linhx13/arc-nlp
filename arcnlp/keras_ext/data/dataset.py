@@ -7,11 +7,15 @@ class Dataset(object):
     """Define a dataset composed of Examples along with its fields.
 
     Attributes:
+        sort_key (callable): A key to use for sorting dataset examples for
+            batching.
         examples (list(Example)): The examples in this dataset.
         fields (dict[str, Field]): Contains the name of each column of field,
             together with the corresponding Field object. Two fields with same
             Field object will have a shared vocabulary.
     """
+
+    sort_key = None
 
     def __init__(self, examples, fields, filter_pred=None, lazy=False):
         """Create a data from a list of Examples and Fields.
@@ -42,7 +46,7 @@ class Dataset(object):
     def __getitem__(self, i):
         return self.exmples[i]
 
-    def __len(self):
+    def __len__(self):
         try:
             return len(self.examples)
         except TypeError:

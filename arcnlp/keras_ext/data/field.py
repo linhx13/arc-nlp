@@ -7,8 +7,55 @@ import numpy as np
 import six
 
 from .. import constants as C
-from ..vocab import Vocab
 from .datasets import Dataset
+from ..vocab import Vocab
+
+
+class RawField(object):
+    """Defines a general datatype.
+
+    Every dataset consists of one or more types of data. For instance, a text
+    classification dataset contains sentences and their classes, while a
+    machine translation dataset contains paired examples of text in two
+    languages. Each of these types of data is represented by a RawField object.
+    A RawField object does not assume any property of the data type and
+    it holds parameters relating to how a datatype should be processed.
+
+    Attributes:
+        preprocessing: The Pipeline that will be applied to examples
+            using this field before create an example.
+            Default: None.
+        postprocessing: A Pipeline that will be applied to a list of examples
+            using this field before assigning to a batch.
+            Function signature: (batch(list)) -> object
+            Default: None.
+    """
+
+    def __init__(self, preprocessing=None, postprocessing=None):
+        self.preprocessing = preprocessing
+        self.postprocessing = postprocessing
+
+    def preprocess(self, x):
+        """Preprocess an example if the `preprocessing` is provided."""
+        if self.preprocessing is not None:
+            return self.preprocessing(x)
+        else:
+            return x
+
+    def process(self, batch, *args, **kwargs):
+        """Process a list of examples to create a batch.
+
+        Postprocess the batch with user-provided Pipeline.
+
+        Args:
+            batch (list(object)): A list of object from a batch of examples.
+        Returns:
+            object: Processed object given the input and custom
+                postprocessing Pipeline.
+        """
+        if self.postprocessing is None:
+            batch = self.postprocessing(batch)
+        return batch
 
 
 class Field(object):
