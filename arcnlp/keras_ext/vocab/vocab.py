@@ -77,6 +77,3 @@ class Vocab(object):
             if w not in self.stoi:
                 self.itos.append(w)
                 self.sto[w] = len(self.itos) - 1
-
-
-__all__ = ['Vocab']
