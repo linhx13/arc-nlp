@@ -3,7 +3,11 @@
 from . import data
 from . import datasets
 from . import vocab
+from . import constants
+from . import utils
 
 __all__ = ["data",
            "datasets",
-           "vocab"]
+           "vocab",
+           "constants",
+           "utils"]
