@@ -17,29 +17,34 @@ class SequenceTaggingDataset(data.Dataset):
 
     def __init__(self, path, fields, encoding="utf-8", separator="\t",
                  lazy=False, **kwargs):
-        examples = self.gen_examples(path, fields, encoding, separator)
+        self.path = path
+        self.fields = fields
+        self.encoding = encoding
+        self.separator = separator
+        if lazy:
+            examples = self.gen_examples
         if not lazy:
-            examples = list(examples)
+            examples = list(self.gen_examples())
         super(SequenceTaggingDataset, self).__init__(examples, fields,
-                                                     **kwargs)
+                                                     lazy=lazy, **kwargs)
 
-    def gen_examples(self, path, fields, encoding, separator, lazy):
-        while True:
-            columns = []
-            with io.open(path, encoding=encoding) as input_file:
-                for line in input_file:
-                    line = line.strip('\r\n')
-                    if line == "":
-                        if columns:
-                            yield data.Example.from_list(columns, fields)
-                        columns = []
-                    else:
-                        for i, column in enumerate(line.split(separator)):
-                            if len(columns) < i + 1:
-                                columns.append([])
-                            columns[i].append(column)
-                if columns:
-                    yield data.Example.from_list(columns, fields)
-            # FIXME: lazy logic
-            if not lazy:
-                break
+    def gen_examples(self):
+        columns = []
+        with io.open(self.path, encoding=self.encoding) as fin:
+            for line in fin:
+                line = line.strip('\r\n')
+                if line == "":
+                    if columns:
+                        yield data.Example.from_list(columns, self.fields)
+                    columns = []
+                else:
+                    arr = line.split(self.separator)
+                    if len(arr) != len(self.fields):
+                        continue
+                    for i, col in enumerate(arr):
+                        if len(columns) < i + 1:
+                            columns.append([])
+                        columns[i].append(col)
+            if columns:
+                yield data.Example.from_list(columns, self.fields)
+

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import six
+from six.moves import filter
 
 
 class Dataset(object):
@@ -17,23 +17,28 @@ class Dataset(object):
 
     sort_key = None
 
-    def __init__(self, examples, fields, filter_pred=None):
+    def __init__(self, examples, fields, filter_pred=None, lazy=False):
         """Create a data from a list of Examples and Fields.
 
         Args:
-            examples: List of Examples.
+            examples: List of Examples or a callable which returns a generator.
             fields (List(tuple(str, Filed))): The fields to use in this tuple.
                 The string is a field name, and the Field is the associated
                 field.
             filter_pred (callable or None): use onley examples for which
                 filter_pred(example) is True, or use all examples if None.
                 Default is None.
+            lazy: If this is true, `examples` should a callable which returns
+                a examples generator, otherwise `examples` shoule be a list.
+                Default is False.
         """
-        if filter_pred is not None:
-            make_list = isinstance(examples, list)
-            examples = six.moves.filter(filter_pred, examples)
-            if make_list:
-                examples = list(examples)
+        self.lazy = lazy
+        if not lazy:
+            if filter_pred is not None:
+                examples = filter(filter_pred, examples)
+            examples = list(examples)
+        else:
+            self.filter_pred = filter_pred
         self.examples = examples
         self.fields = dict(fields)
         # Unpack field tuples
@@ -42,8 +47,19 @@ class Dataset(object):
                 self.fields.update(zip(n, f))
                 del self.fields[n]
 
+    @property
+    def examples(self):
+        if self.lazy:
+            examples = self._examples()
+            assert not isinstance(examples, list)
+            if self.filter_pred is not None:
+                examples = filter(self.filter_pred, examples)
+            return examples
+        else:
+            return self._examples
+
     def __getitem__(self, i):
-        return self.exmples[i]
+        return self.examples[i]
 
     def __len__(self):
         try:
