@@ -27,13 +27,15 @@ class RawField(object):
             Default: None.
         postprocessing: A Pipeline that will be applied to a list of examples
             using this field before assigning to a batch.
-            Function signature: (batch(list)) -> object
-            Default: None.
+            Function signature: (batch(list)) -> object. Default: None.
+        is_target: Whether this field is a target variable.
+            Affects iteration over batches. Default: False.
     """
 
-    def __init__(self, preprocessing=None, postprocessing=None):
+    def __init__(self, preprocessing=None, postprocessing=None, is_target=False):
         self.preprocessing = preprocessing
         self.postprocessing = postprocessing
+        self.is_target = is_target
 
     def preprocess(self, x):
         """Preprocess an example if the `preprocessing` is provided."""
@@ -58,7 +60,7 @@ class RawField(object):
         return batch
 
 
-class Field(object):
+class Field(RawField):
 
     vocab_cls = Vocab
 
@@ -67,7 +69,8 @@ class Field(object):
                  preprocessing=None, postprocessing=None, lower=False,
                  tokenize=None, include_lengths=False,
                  pad_token=C.PAD_TOKEN, unk_token=C.UNK_TOKEN,
-                 pad_first=False, truncate_first=False, stop_words=None):
+                 pad_first=False, truncate_first=False, stop_words=None,
+                 is_target=False):
         self.sequential = sequential
         self.use_vocab = use_vocab
         self.init_token = init_token
@@ -89,6 +92,7 @@ class Field(object):
                               if stop_words is not None else None
         except TypeError:
             raise ValueError("Stop words must be convertible to a set")
+        self.is_target = is_target
 
     def __eq__(self, other):
         if not isinstance(other, Field):
@@ -160,7 +164,7 @@ class Field(object):
                     + (x[-max_len:] if self.truncate_first else x[:max_len])
                     + ([] if self.eos_token is None else [self.eos_token])
                     + [self.pad_token] * max(0, max_len - len(x)))
-            lengths.append(len(padded[-1]), - max(0, max_len - len(x)))
+            lengths.append(len(padded[-1]) - max(0, max_len - len(x)))
         if self.include_lengths:
             return (padded, lengths)
         else:
@@ -176,7 +180,7 @@ class Field(object):
             raise ValueError("Field has include_lengths set to True, but "
                              "input data is not a tuple of "
                              "(data batch, batch length).")
-        if self.isinstance(arr, tuple):
+        if isinstance(arr, tuple):
             arr, lengths = arr
             lengths = np.array(lengths, dtype=self.dtype)
 
@@ -233,3 +237,19 @@ class Field(object):
                             self.eos_token] + kwargs.pop('specials', [])
             if tok is not None))
         self.vocab = self.vocab_cls(counter, specials=specials, **kwargs)
+
+
+
+class LabelField(Field):
+    """A Label field.
+
+    A label field is a shallow wrapper around a standard field designed to hold
+    labels for a classification task. Its only use to set the unk_token and
+    sequential to `None` by default.
+    """
+
+    def __init__(self, **kwargs):
+        kwargs['sequential'] = False
+        kwargs['unk_token'] = None
+        kwargs['is_target'] = True
+        super(LabelField, self).__init__(**kwargs)
