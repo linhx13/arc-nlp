@@ -7,8 +7,8 @@ import numpy as np
 import six
 
 from .. import constants as C
-from .datasets import Dataset
 from ..vocab import Vocab
+from .dataset import Dataset
 
 
 class RawField(object):
@@ -71,7 +71,7 @@ class Field(object):
         self.sequential = sequential
         self.use_vocab = use_vocab
         self.init_token = init_token
-        self.eos_token = init_token
+        self.eos_token = eos_token
         self.unk_token = unk_token
         self.pad_token = pad_token if self.sequential else None
         self.fix_length = fix_length
@@ -216,7 +216,7 @@ class Field(object):
         for arg in args:
             if isinstance(arg, Dataset):
                 sources += [getattr(arg, name)
-                            for name, field in args.fields.items()
+                            for name, field in arg.fields.items()
                             if field is self]
             else:
                 sources.append(arg)

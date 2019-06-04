@@ -39,7 +39,7 @@ class Dataset(object):
             examples = list(examples)
         else:
             self.filter_pred = filter_pred
-        self.examples = examples
+        self._examples = examples
         self.fields = dict(fields)
         # Unpack field tuples
         for n, f in list(self.fields.items()):
@@ -59,13 +59,20 @@ class Dataset(object):
             return self._examples
 
     def __getitem__(self, i):
-        return self.examples[i]
+        examples = self.examples
+        if hasattr(examples, '__getitem__'):
+            return examples[i]
+        else:
+            raise TypeError('Examples type %s does not support __getitem__'
+                            % type(examples))
 
     def __len__(self):
+        examples = self.examples
         try:
-            return len(self.examples)
+            return len(examples)
         except TypeError:
-            return 2 ** 32
+            raise TypeError("Examples type %s does not support __len__"
+                            % type(examples))
 
     def __iter__(self):
         for x in self.examples:

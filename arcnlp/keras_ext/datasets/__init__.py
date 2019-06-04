@@ -1,3 +1,5 @@
 # -*- coding: utf-8 -*-
 
-__all__ = []
+from .sequence_tagging import SequenceTaggingDataset
+
+__all__ = ["SequenceTaggingDataset"]

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import io
+from functools import partial
 
 from .. import data
 
@@ -17,34 +18,33 @@ class SequenceTaggingDataset(data.Dataset):
 
     def __init__(self, path, fields, encoding="utf-8", separator="\t",
                  lazy=False, **kwargs):
-        self.path = path
-        self.fields = fields
-        self.encoding = encoding
-        self.separator = separator
+        self.make_example = partial(data.Example.from_list, fields=fields)
+        gen_examples = partial(self.gen_examples, path=path, fields=fields,
+                               encoding=encoding, separator=separator)
         if lazy:
-            examples = self.gen_examples
-        if not lazy:
-            examples = list(self.gen_examples())
+            examples = gen_examples
+        else:
+            examples = list(gen_examples())
         super(SequenceTaggingDataset, self).__init__(examples, fields,
                                                      lazy=lazy, **kwargs)
 
-    def gen_examples(self):
+    def gen_examples(self, path, fields, encoding, separator):
         columns = []
-        with io.open(self.path, encoding=self.encoding) as fin:
+        with io.open(path, encoding=encoding) as fin:
             for line in fin:
                 line = line.strip('\r\n')
                 if line == "":
                     if columns:
-                        yield data.Example.from_list(columns, self.fields)
+                        yield self.make_example(columns)
                     columns = []
                 else:
-                    arr = line.split(self.separator)
-                    if len(arr) != len(self.fields):
+                    arr = line.split(separator)
+                    if len(arr) != len(fields):
                         continue
                     for i, col in enumerate(arr):
                         if len(columns) < i + 1:
                             columns.append([])
                         columns[i].append(col)
             if columns:
-                yield data.Example.from_list(columns, self.fields)
+                yield self.make_example(columns)
 
