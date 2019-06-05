@@ -41,6 +41,7 @@ class Dataset(object):
             self.filter_pred = filter_pred
         self._examples = examples
         self.fields = dict(fields)
+        self.length = None
         # Unpack field tuples
         for n, f in list(self.fields.items()):
             if isinstance(n, tuple):
@@ -67,12 +68,9 @@ class Dataset(object):
                             % type(examples))
 
     def __len__(self):
-        examples = self.examples
-        try:
-            return len(examples)
-        except TypeError:
-            raise TypeError("Examples type %s does not support __len__"
-                            % type(examples))
+        if self.length is None:
+            self.length = sum(1 for _ in self.examples)
+        return self.length
 
     def __iter__(self):
         for x in self.examples:

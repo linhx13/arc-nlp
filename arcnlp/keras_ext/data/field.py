@@ -70,7 +70,7 @@ class Field(RawField):
                  tokenize=None, include_lengths=False,
                  pad_token=C.PAD_TOKEN, unk_token=C.UNK_TOKEN,
                  pad_first=False, truncate_first=False, stop_words=None,
-                 is_target=False):
+                 is_target=False, one_hot=False):
         self.sequential = sequential
         self.use_vocab = use_vocab
         self.init_token = init_token
@@ -93,6 +93,7 @@ class Field(RawField):
         except TypeError:
             raise ValueError("Stop words must be convertible to a set")
         self.is_target = is_target
+        self.one_hot = one_hot
 
     def __eq__(self, other):
         if not isinstance(other, Field):
@@ -199,6 +200,8 @@ class Field(RawField):
                 arr = self.postprocessing(arr, None)
 
         arr = np.array(arr, dtype=self.dtype)
+        if self.one_hot:
+            arr = np.eye(len(self.vocab))[arr]
         if self.include_lengths:
             return arr, lengths
         else:

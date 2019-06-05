@@ -51,10 +51,13 @@ class Batch(object):
         elif len(fields) == 1:
             return getattr(self, fields[0])
         else:
-            return tuple(getattr(self, f) for f in fields)
+            return list(getattr(self, f) for f in fields)
 
     def __iter__(self):
-        print("here")
         yield self._get_field_values(self.input_fields)
         yield self._get_field_values(self.target_fields)
+
+    def as_tensors(self):
+        return self._get_field_values(self.input_fields), \
+            self._get_field_values(self.target_fields)
 
