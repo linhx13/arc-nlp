@@ -38,7 +38,7 @@ class SequenceTaggingDataset(data.Dataset):
                         yield self.make_example(columns)
                     columns = []
                 else:
-                    arr = line.split(separator)
+                    arr = line.rsplit(separator, len(fields) - 1)
                     if len(arr) != len(fields):
                         continue
                     for i, col in enumerate(arr):
