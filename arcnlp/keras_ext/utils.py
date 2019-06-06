@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import errno
 
 import tensorflow as tf
 from keras import backend as K
@@ -25,3 +26,13 @@ def create_tf_session(per_process_gpu_memory_fraction=0.5,
         per_process_gpu_memory_fraction
     config.gpu_options.allow_growth = gpu_allow_growth
     return tf.Session(config=config)
+
+
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as ex:
+        if ex.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
