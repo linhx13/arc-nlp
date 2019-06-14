@@ -243,6 +243,11 @@ def merge_segmented_entities(words, entity_list):
         return res.split(' ')
 
 
+def clean_html_tags(raw_html):
+  cleantext = re.sub('<.*?>', '', raw_html)
+  return cleantext
+
+
 if __name__ == '__main__':
     text = u"成田空港—【ＪＲ特急成田エクスプレス号・横浜行，2站】—東京—【ＪＲ新幹線はやぶさ号・新青森行,6站 】—新青森—【ＪＲ特急スーパー白鳥号・函館行，4站 】—函館"
     print(convert_fh(text, FH_ASCII,
