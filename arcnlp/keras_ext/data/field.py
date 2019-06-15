@@ -68,7 +68,7 @@ class Field(RawField):
                  eos_token=None, fix_length=None, dtype=np.int32,
                  preprocessing=None, postprocessing=None, lower=False,
                  tokenize=None, include_lengths=False,
-                 pad_token=C.PAD_TOKEN, unk_token=C.UNK_TOKEN,
+                 pad_token="<pad>", unk_token="<unk>",
                  pad_first=False, truncate_first=False, stop_words=None,
                  is_target=False, one_hot=False):
         self.sequential = sequential
@@ -241,6 +241,67 @@ class Field(RawField):
             if tok is not None))
         self.vocab = self.vocab_cls(counter, specials=specials, **kwargs)
 
+
+class NestedField(Field):
+    """A nested field.
+
+    A nested field holds another field (called *nesting_field*), accepts an
+    untokenized string or a list string tokens and groups and treats then as
+    one field as described by the nesting field. Every token will be preprocessed
+    """
+
+    def __init__(self, nesting_field, use_vocab=True, init_token=None,
+                 eos_token=None, fix_length=None, dtype=np.int32,
+                 preprocessing=None, postprocessing=None, tokenize=None,
+                 include_lengths=False, pad_token="<pad>",
+                 pad_first=False, truncate_first=False):
+        if isinstance(nesting_field, NestedField):
+            raise ValueError("nesting field must not be another NestedField")
+        if nesting_field.include_lengths:
+            raise ValueError("nesting field cannot have include_lengths=True")
+
+        if nesting_field.sequential:
+            pad_token = nesting_field.pad_token
+        super(NestedField, self).__init__(
+            use_vocab=use_vocab,
+            init_token=init_token,
+            eos_token=eos_token,
+            fix_length=fix_length,
+            dtype=dtype,
+            preprocessing=preprocessing,
+            postprocessing=postprocessing,
+            lower=nesting_field.lower,
+            tokenize=tokenize,
+            pad_token=pad_token,
+            unk_token=nesting_field.unk_token,
+            pad_first=pad_first,
+            truncate_first=truncate_first,
+            include_lengths=include_lengths
+        )
+        self.nesting_field = nesting_field
+
+    def preprocess(self, xs):
+        """Preprocess a single example.
+
+        Firstly, tokenization and the supplied preprocessing is applied. Since
+        this field is always sequential, the result is a list. Then, each
+        element of the list is preprocessed using `self.nesting_field.preprocess`
+        and the resulting list is returned.
+
+        Args:
+            xs (list or str): The input to preprocess.
+
+        Returns:
+            list: The preprocessed list.
+        """
+        return [self.nesting_field.preprocess(x)
+                for x in super(NestedField, self).preprocess(xs)]
+
+    def pad(self, minibatch):
+        """Pad a batch of examples using this field.
+
+        Args: 
+        """
 
 
 class LabelField(Field):

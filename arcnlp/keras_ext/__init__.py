@@ -5,9 +5,11 @@ from . import datasets
 from . import vocab
 from . import constants
 from . import utils
+from . import layers
 
 __all__ = ["data",
            "datasets",
            "vocab",
            "constants",
-           "utils"]
+           "utils",
+           "layers"]
