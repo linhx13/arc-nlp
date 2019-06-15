@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import os
+from shutil import copyfile
 
 import numpy as np
 from keras.callbacks import EarlyStopping, LambdaCallback, ModelCheckpoint
@@ -100,4 +102,25 @@ class Trainer(object):
         }
 
     def _get_callbacks(self):
-        early_stop = EarlyStopping(monitor=self.validation_metric)
+        early_stop = EarlyStopping(monitor=self.validation_metric,
+                                   patience=self.patience)
+        # TODO: add model_callbacks
+        callbacks = [early_stop]
+        if self.serialization_dir:
+            checkpoint_path = os.path.join(self.serialization_dir,
+                                           CHECKPOINT_WEIGHTS_FILE)
+            model_checkpoint = ModelCheckpoint(checkpoint_path，
+                                               save_best_only=True,
+                                               save_weightes_only=True,
+                                               monitor=self.validation_metric)
+            callbacks.append(model_checkpoint)
+        return callbacks
+
+    def _save_best_model(self):
+        ckpt_weights_path = os.path.join(
+            self.serialization_dir,
+            "model_weights.epoch_%d.h5" % (self.best_epoch + 1))
+        model_weights_path = os.path.join(
+            self.serialization_dir, MODEL_WEIGHTS_FILE)
+        copyfile(ckpt_weights_path, model_weights_path)
+        logger.info("Saved the best model to %s" % model_weights_path)
