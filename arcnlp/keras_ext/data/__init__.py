@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from .batch import Batch
-from .dataset import Dataset
+from .dataset import Dataset, TabularDataset
 from .example import Example
-from .field import RawField, Field
+from .field import RawField, Field, NestedField
 from .iterator import (batch, pool, Iterator, BucketIterator)
 
 __all__ = ["Batch",
-           "Dataset",
+           "Dataset", "TabularDataset",
            "Example",
-           "RawField", "Field",
+           "RawField", "Field", "NestedField"
            "batch", "pool", "Iterator", "BucketIterator"]

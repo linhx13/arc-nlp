@@ -6,7 +6,6 @@ from itertools import chain
 import numpy as np
 import six
 
-from .. import constants as C
 from ..vocab import Vocab
 from .dataset import Dataset
 
@@ -32,7 +31,8 @@ class RawField(object):
             Affects iteration over batches. Default: False.
     """
 
-    def __init__(self, preprocessing=None, postprocessing=None, is_target=False):
+    def __init__(self, preprocessing=None, postprocessing=None,
+                 is_target=False):
         self.preprocessing = preprocessing
         self.postprocessing = postprocessing
         self.is_target = is_target
@@ -246,8 +246,10 @@ class NestedField(Field):
     """A nested field.
 
     A nested field holds another field (called *nesting_field*), accepts an
-    untokenized string or a list string tokens and groups and treats then as
-    one field as described by the nesting field. Every token will be preprocessed
+    untokenized string or a list string tokens and groups and treats them as
+    one field as described by the nesting field. The two fields' vocabularies
+    will be shared.
+    This field is primarily used to implement character embeddings.
     """
 
     def __init__(self, nesting_field, use_vocab=True, init_token=None,
@@ -283,11 +285,6 @@ class NestedField(Field):
     def preprocess(self, xs):
         """Preprocess a single example.
 
-        Firstly, tokenization and the supplied preprocessing is applied. Since
-        this field is always sequential, the result is a list. Then, each
-        element of the list is preprocessed using `self.nesting_field.preprocess`
-        and the resulting list is returned.
-
         Args:
             xs (list or str): The input to preprocess.
 
@@ -300,8 +297,51 @@ class NestedField(Field):
     def pad(self, minibatch):
         """Pad a batch of examples using this field.
 
-        Args: 
+        Args:
+            minibatch: Each element is a list of string if
+                `self.nesting_field.sequential` is `False`, a list of string
+                otherwise.
+
+        Returns:
+            list: The padded minibatch or (padded, sentence_lens, word_lens)
         """
+        minibatch = list(minibatch)
+        if not self.nesting_field.sequential:
+            return super(NestedField, self).pad(minibatch)
+
+        old_pad_token = self.pad_token
+        old_init_token = self.init_token
+        old_eos_token = self.eos_token
+        old_fix_len = self.nesting_field.fix_length
+        if self.nesting_field.fix_length is None:
+            max_len = max(len(xs) for ex in minibatch for xs in ex)
+            fix_len = max_len + 2 - (self.nesting_field.init_token,
+                                     self.nesting_field.eos_token).count(None)
+            self.nesting_field.fix_length = fix_len
+        self.pad_token = [self.pad]
+
+    def build_vocab(self, *args, **kwargs):
+        """Construct the Vocab object for nesting field and combine it with
+        this field's vocab.
+
+        Args:
+            args: Dataset objects or other iterable data sources from which to
+                construct the Vocab object that represents the set of possible
+                values for the nesting field. If a Dataset object is provided,
+                all columns corresponding to this field are used; individual
+                columns can also be provided directly.
+            kwargs: Passed to the constructor of Vocab.
+        """
+        sources = []
+        for arg in args:
+            if isinstance(arg, Dataset):
+                sources.extend(
+                    [getattr(arg, name) for name, field in arg.fields.items()
+                     if field is self])
+            else:
+                sources.append(arg)
+
+        
 
 
 class LabelField(Field):

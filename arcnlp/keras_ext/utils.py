@@ -3,7 +3,7 @@
 import os
 import errno
 
-import tensorflow as tf
+# import tensorflow as tf
 import numpy as np
 
 
@@ -20,6 +20,7 @@ def create_tf_session(allow_soft_placement=True,
                       gpu_allow_growth=True,
                       visible_device_list=None,
                       **kwargs):
+    import tensorflow as tf
     config = tf.ConfigProto()
     config.allow_soft_placement = allow_soft_placement
     config.gpu_options.per_process_gpu_memory_fraction = \
