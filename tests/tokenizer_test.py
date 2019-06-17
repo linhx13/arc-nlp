@@ -13,12 +13,16 @@ class TestTokenizer(unittest.TestCase):
         self.tokenizer = JiebaTokenizer(
             user_dict=os.path.join(PWD, 'user_dict.txt'))
 
-    def test_simple(self):
+    def test_simple_perf(self):
         s = "这个乒乓球拍卖多少？"
         for i in range(200000):
             ss = '%s%d' % (s, i)
             for x in self.tokenizer(ss):
                 pass
+
+    def test_simple(self):
+        s = "这个乒乓球拍卖多少？"
+        print(self.tokenizer(s))
 
 
 if __name__ == '__main__':

@@ -15,12 +15,12 @@ class JiebaTokenizer(object):
         Token.set_extension("pos", default=None, force=True)
 
     def __call__(self, text):
-        terms = self.t(text)
-        words = [x.word for x in terms]
+        tokens = self.t(text)
+        words = [x.text for x in tokens]
         spaces = [False] * len(words)
         doc = Doc(self.vocab, words=words, spaces=spaces)
         for idx, token in enumerate(doc):
-            token._.set('pos', terms[idx].flag)
+            token._.set('pos', tokens[idx].pos)
         return doc
 
     def __reduce__(self):

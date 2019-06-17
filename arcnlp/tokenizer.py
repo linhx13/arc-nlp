@@ -1,18 +1,29 @@
 # -*- coding: utf-8 -*-
 
+from typing import Union, Iterable, List
+
 from jieba import posseg
 from pygtrie import Trie
 
 
+class Token(object):
+    def __init__(self, text: str, pos: str):
+        self.text = text
+        self.pos = pos
+
+    def __repr__(self):
+        return "Token<text:%s,pos:%s>" % (self.text, self.pos)
+
+
 class JiebaTokenizer(object):
-    def __init__(self, user_dict=None):
+    def __init__(self, user_dict: Union[str, Iterable] = None):
         self.t = posseg.POSTokenizer()
         self.t.initialize()
         self.trie = Trie()
         if user_dict:
             self.load_user_dict(user_dict)
 
-    def load_user_dict(self, user_dict):
+    def load_user_dict(self, user_dict: Union[str, Iterable] = None):
         if isinstance(user_dict, str):
             with open(user_dict) as fin:
                 user_dict = [line.strip('\r\n') for line in fin]
@@ -34,7 +45,7 @@ class JiebaTokenizer(object):
         for key, value in seg_dict.items():
             self.trie[self.t.tokenizer.lcut(key)] = value
 
-    def __call__(self, s):
+    def __call__(self, s: str) -> List[Token]:
         res = []
         term_list = list(self.t.cut(s))
         text_list = [x.word for x in term_list]
@@ -42,9 +53,9 @@ class JiebaTokenizer(object):
         while idx < len(text_list):
             m = self.trie.longest_prefix(text_list[idx:])
             if m:
-                res.extend([posseg.pair(x, 'nz') for x in m.value])
+                res.extend(Token(x, 'nz') for x in m.value)
                 idx += len(m.key)
             else:
-                res.append(term_list[idx])
+                res.append(Token(term_list[idx].word, term_list[idx].flag))
                 idx += 1
         return res
