@@ -59,3 +59,10 @@ class JiebaTokenizer(object):
                 res.append(Token(term_list[idx].word, term_list[idx].flag))
                 idx += 1
         return res
+
+
+def get(name, user_dict=None, **kwargs):
+    if name == "jieba":
+        return JiebaTokenizer(user_dict=user_dict, **kwargs)
+    else:
+        raise ValueError("Unsupported tokenizer type: %s" % name)
