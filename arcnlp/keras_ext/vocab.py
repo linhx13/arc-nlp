@@ -3,8 +3,6 @@
 import logging
 from collections import defaultdict
 
-from . import constants as C
-
 logger = logging.getLogger(__name__)
 
 
@@ -19,10 +17,9 @@ class Vocab(object):
 
     """
 
-    UNK = C.UNK_TOKEN
+    UNK = "<unk>"
 
-    def __init__(self, counter=None, max_size=None, min_freq=1,
-                 specials=[C.PAD_TOKEN]):
+    def __init__(self, counter, max_size=None, min_freq=1, specials=["<pad>"]):
         """Create a Vocab object from a collections.Counter.
 
         Arguments:
@@ -41,7 +38,8 @@ class Vocab(object):
 
         self.itos = list(specials)
         specials_set = set(specials)
-        word_freqs = sorted(counter.items(), key=lambda t: t[1], reverse=True)
+        word_freqs = sorted(counter.items(), key=lambda t: t[0])
+        word_freqs.sort(key=lambda t: t[1], reverse=True)
         for word, freq in word_freqs:
             if freq < min_freq or len(self.itos) == max_size:
                 break
@@ -49,17 +47,13 @@ class Vocab(object):
                 continue
             self.itos.append(word)
 
-        self.unk_index, self.unk_token = None, None
+        self.unk_index = None
         if Vocab.UNK in specials:
             self.unk_index = specials.index(Vocab.UNK)
-            self.unk_token = Vocab.UNK
             self.stoi = defaultdict(self._default_unk_index)
         else:
             self.stoi = defaultdict()
         self.stoi.update({tok: idx for idx, tok in enumerate(self.itos)})
-
-    def _default_unk_index(self):
-        return self.unk_index
 
     def __len__(self):
         return len(self.itos)
@@ -70,6 +64,24 @@ class Vocab(object):
         if self.itos != other.itos:
             return False
         return True
+
+    def __getstate__(self):
+        # avoid pickling defaultdict, cast to regular dict
+        attrs = dict(self.__dict__)
+        attrs['stoi'] = dict(self.stoi)
+        return attrs
+
+    def __setstate__(self, state):
+        if state['unk_index'] is None:
+            stoi = defaultdict()
+        else:
+            stoi = defaultdict(self._default_unk_index)
+        stoi.update(state['stoi'])
+        state['stoi'] = stoi
+        self.__dict__.update(state)
+
+    def _default_unk_index(self):
+        return self.unk_index
 
     def extend(self, other, sort=False):
         words = sorted(other.itos) if sort else other.itos

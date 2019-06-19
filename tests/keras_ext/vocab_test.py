@@ -19,7 +19,6 @@ class TestVocab(unittest.TestCase):
         vocab = Vocab(counter, max_size=1, min_freq=2, specials=specials)
         print(vocab.stoi)
         print(vocab.itos)
-        self.assertEqual("<unk>", vocab.unk_token)
         self.assertEqual(1, vocab.unk_index)
 
         for idx, tok in enumerate(specials):
@@ -34,4 +33,3 @@ class TestVocab(unittest.TestCase):
         self.assertEquals(vocab, new_vocab)
         print(new_vocab.stoi)
         print(new_vocab.itos)
-
