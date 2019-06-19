@@ -70,7 +70,7 @@ class Field(RawField):
                  tokenize=None, include_lengths=False,
                  pad_token="<pad>", unk_token="<unk>",
                  pad_first=False, truncate_first=False, stop_words=None,
-                 is_target=False, one_hot=False):
+                 is_target=False):
         self.sequential = sequential
         self.use_vocab = use_vocab
         self.init_token = init_token
@@ -89,11 +89,10 @@ class Field(RawField):
         self.truncate_first = truncate_first
         try:
             self.stop_words = set(stop_words) \
-                              if stop_words is not None else None
+                if stop_words is not None else None
         except TypeError:
             raise ValueError("Stop words must be convertible to a set")
         self.is_target = is_target
-        self.one_hot = one_hot
 
     def __eq__(self, other):
         if not isinstance(other, Field):
@@ -150,7 +149,7 @@ class Field(RawField):
             max_len = max(len(x) for x in minibatch)
         else:
             max_len = self.fix_length + \
-                      (self.init_token, self.eos_token).count(None) - 2
+                (self.init_token, self.eos_token).count(None) - 2
         padded, lengths = [], []
         for x in minibatch:
             if self.pad_first:
@@ -200,8 +199,6 @@ class Field(RawField):
                 arr = self.postprocessing(arr, None)
 
         arr = np.array(arr, dtype=self.dtype)
-        if self.one_hot:
-            arr = np.eye(len(self.vocab))[arr]
         if self.include_lengths:
             return arr, lengths
         else:
@@ -340,8 +337,6 @@ class NestedField(Field):
                      if field is self])
             else:
                 sources.append(arg)
-
-        
 
 
 class LabelField(Field):

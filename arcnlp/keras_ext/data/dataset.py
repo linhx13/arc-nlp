@@ -6,16 +6,30 @@ from .example import Example
 
 
 class Dataset(object):
+    """Defines a dataset composed of Examples along with its Fields.
+
+    Attributes:
+        sort_key: Callable. A key to use for sorting dataset examples for
+            batching examples with similar lengths to minimize padding.
+    """
     sort_key = None
 
     def __init__(self, examples, fields, filter_pred=None):
+        """Create a dataset composed of Examples along with its Fields.
+
+        Args:
+            examples: The examples in this dataset.
+            fields: dict[str, Field]
+        """
+
         if filter_pred is not None:
             make_list = isinstance(examples, list)
             examples = filter(filter_pred, examples)
             if make_list:
                 examples = list(examples)
         self.examples = examples
-        self.fields = dict(fields)
+        self.fields = fields
+        # self.fields = dict(fields)
         # TODO: Unpack field tuples
         # for n, f in list(self.fields.items()):
         #     if isinstance(n, tuple):
