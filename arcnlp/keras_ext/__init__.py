@@ -6,10 +6,12 @@ from . import vocab
 from . import constants
 from . import utils
 from . import layers
+from . import models
 
 __all__ = ["data",
            "datasets",
            "vocab",
            "constants",
            "utils",
-           "layers"]
+           "layers",
+           "models"]

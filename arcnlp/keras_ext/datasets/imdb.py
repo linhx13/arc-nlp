@@ -13,16 +13,16 @@ class IMDB(data.Dataset):
     def sort_key(ex):
         return len(ex.text)
 
-    def __init__(self, path, text_fields, label_fields, **kwargs):
+    def __init__(self, path, text_fields, label_field, **kwargs):
         """Create an IMDB dataset.
 
         Args:
             path: Path to the dataset's top level directory
             text_fields: Dict[str, Field]
-            labe_fields: Dict[str, Field]
-            kwargs
+            label_field: Field
+            kwargs:
         """
-        fields = [text_fields, label_fields]
+        fields = [text_fields, {"label": label_field}]
         examples = []
 
         for label in ['pos', 'neg']:

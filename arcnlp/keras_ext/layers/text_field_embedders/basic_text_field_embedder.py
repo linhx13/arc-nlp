@@ -26,6 +26,8 @@ class BasicTextFieldEmbedder(TextFieldEmbedder):
         embedder_keys = list(self.token_embedders.keys())
         keys = sorted(embedder_keys)
         embedded = [self.token_embedders[key](inputs[key]) for key in keys]
+        print('embedded:', embedded)
         outputs = embedded[0] if len(embedded) == 1 \
             else keras.layers.Concatenate()(embedded)
+        print('outputs:', outputs)
         return outputs
