@@ -19,7 +19,7 @@ class Dataset(object):
 
         Args:
             examples: The examples in this dataset.
-            fields: dict[str, Field]
+            fields: Dict[str, Field]
         """
 
         if filter_pred is not None:
@@ -28,13 +28,20 @@ class Dataset(object):
             if make_list:
                 examples = list(examples)
         self.examples = examples
+
+        if isinstance(fields, dict):
+            fields, field_dict = {}, fields
+            for fs in field_dict.values():
+                for n, f in fs.items():
+                    assert n not in fields
+                    fields[n] = f
+        else:
+            fields, field_list = {}, fields
+            for fs in field_list:
+                for n, f in fs.items():
+                    assert n not in fields
+                    fields[n] = f
         self.fields = fields
-        # self.fields = dict(fields)
-        # TODO: Unpack field tuples
-        # for n, f in list(self.fields.items()):
-        #     if isinstance(n, tuple):
-        #         self.fields.update(zip(n, f))
-        #         del self.fields[n]
 
     def __getitem__(self, i):
         return self.examples[i]
@@ -138,6 +145,14 @@ class TabularDataset(Dataset):
     """Defines a Dataset of columns from list of list or list of dict."""
 
     def __init__(self, data, format, fields, **kwargs):
+        """Create a TabularDataset.
+
+        Args:
+            data:
+            format:
+            fields: List[Dict[str, Field]] or Dict[str, Dict[str, Field]]
+            kwargs
+        """
         format = format.lower()
         make_example = {
             "list": Example.from_list, "dict": Example.from_dict
@@ -145,18 +160,4 @@ class TabularDataset(Dataset):
 
         examples = [make_example(item, fields) for item in data]
 
-        if isinstance(fields, dict):
-            fields, field_dict = [], fields
-            for field in field_dict.values():
-                if isinstance(field, list):
-                    fields.extend(field)
-                else:
-                    fields.append(field)
-        else:
-            fields, field_list = [], fields
-            for field in field_list:
-                if isinstance(field, list):
-                    fields.extend(field)
-                else:
-                    fields.append(field)
         super(TabularDataset, self).__init__(examples, fields, **kwargs)

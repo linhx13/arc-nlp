@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-class TokenEmbedder(object):
+class TextFieldEmbedder(object):
     def __call__(self, inputs, **kwargs):
         self.call(inputs, **kwargs)
 

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-
 class Batch(object):
     """Defines a batch of examples along with its Fields.
 
@@ -19,13 +18,18 @@ class Batch(object):
     def __init__(self, data=None, dataset=None):
         """Create a Batch from a list of examples."""
         if data is not None:
-            self.batch_size = len(data)
-            self.dataset = dataset
-            self.fields = list(dataset.fields.keys())  # copy field names
-            self.input_fields = [k for k, v in dataset.fields.items()
-                                 if v is not None and not v.is_target]
-            self.target_fields = [k for k, v in dataset.fields.items()
-                                  if v is not None and v.is_target]
+            # self.dataset = dataset
+            # self.fields = list(dataset.fields.keys())  # copy field names
+            # self.input_fields = [(k, v) for k, v in dataset.fields.items()
+            #                      if v is not None and not v.is_target]
+            # self.input_fields.sort(key=lambda x: x[0])
+            # self.target_fields = [(k, v) for k, v in dataset.fields.items()
+            #                       if v is not None and v.is_target]
+            # self.target_fields.sort(key=lambda x: x[0])
+            self.input_fields = sorted(k for k, v in dataset.fields.items()
+                                       if v is not None and not v.is_target)
+            self.target_fields = sorted(k for k, v in dataset.fields.items()
+                                        if v is not None and v.is_target)
             for (name, field) in dataset.fields.items():
                 if field is not None:
                     batch = [getattr(x, name) for x in data]
@@ -46,7 +50,7 @@ class Batch(object):
         return self.batch_size
 
     def _get_field_values(self, fields):
-        if len(fields) == 0:
+        if not fields:
             return None
         elif len(fields) == 1:
             return getattr(self, fields[0])
@@ -60,4 +64,3 @@ class Batch(object):
     def as_tensors(self):
         return self._get_field_values(self.input_fields), \
             self._get_field_values(self.target_fields)
-
