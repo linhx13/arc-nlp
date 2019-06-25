@@ -14,8 +14,14 @@ class TokenCharsEmbedder(TokenEmbedder):
     """
 
     def __init__(self, embedding, encoder, dropout=0.0):
+        """Create a TokenCharsEmbedder.
+
+        Args:
+            embedding: keras.layers.Embedding
+            encoder: seq2vec_encoder
+            dropout: dropout rate
+        """
         super(TokenCharsEmbedder, self).__init__()
-        self.embedding = embedding
         self.embedding = keras.layers.TimeDistributed(embedding)
         self.encoder = encoder
         self.dropout = dropout

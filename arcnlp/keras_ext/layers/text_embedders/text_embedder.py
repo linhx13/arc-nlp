@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-class TextFieldEmbedder(object):
+class TextEmbedder(object):
     def __call__(self, inputs, **kwargs):
         return self.call(inputs, **kwargs)
 

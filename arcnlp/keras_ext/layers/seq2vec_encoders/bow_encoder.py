@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from keras import backend as K
-from keras.engine import InputSpec
+from tensorflow.keras import backend as K
+from tensorflow.keras.layers import InputSpec
 
 from ..masked_layer import MaskedLayer
 
