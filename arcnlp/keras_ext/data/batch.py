@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+
 class Batch(object):
     """Defines a batch of examples along with its Fields.
 
@@ -17,23 +18,18 @@ class Batch(object):
 
     def __init__(self, data=None, dataset=None):
         """Create a Batch from a list of examples."""
+        self.data = {}
         if data is not None:
-            # self.dataset = dataset
-            # self.fields = list(dataset.fields.keys())  # copy field names
-            # self.input_fields = [(k, v) for k, v in dataset.fields.items()
-            #                      if v is not None and not v.is_target]
-            # self.input_fields.sort(key=lambda x: x[0])
-            # self.target_fields = [(k, v) for k, v in dataset.fields.items()
-            #                       if v is not None and v.is_target]
-            # self.target_fields.sort(key=lambda x: x[0])
+            self.dataset = dataset
+            self.fields = list(dataset.fields.keys())  # copy field names
             self.input_fields = sorted(k for k, v in dataset.fields.items()
                                        if v is not None and not v.is_target)
             self.target_fields = sorted(k for k, v in dataset.fields.items()
                                         if v is not None and v.is_target)
-            for (name, field) in dataset.fields.items():
+            for name, field in dataset.fields.items():
                 if field is not None:
-                    batch = [getattr(x, name) for x in data]
-                    setattr(self, name, field.process(batch))
+                    batch = [x[name] for x in data]
+                    self.data[name] = field.process(batch)
 
     @classmethod
     def from_vars(cls, dataset, batch_size, train=None, **kwargs):
@@ -46,6 +42,12 @@ class Batch(object):
             setattr(batch, k, v)
         return batch
 
+    def __getitem__(self, key):
+        return self.data[key]
+
+    def __setitem__(self, key, val):
+        self.data[key] = val
+
     def __len__(self):
         return self.batch_size
 
@@ -53,14 +55,14 @@ class Batch(object):
         if not fields:
             return None
         elif len(fields) == 1:
-            return getattr(self, fields[0])
+            return self.data[fields[0]]
         else:
-            return list(getattr(self, f) for f in fields)
+            return {f: self.data[f] for f in fields}
 
-    def __iter__(self):
-        yield self._get_field_values(self.input_fields)
-        yield self._get_field_values(self.target_fields)
-
-    def as_tensors(self):
+    def as_training_data(self):
         return self._get_field_values(self.input_fields), \
             self._get_field_values(self.target_fields)
+
+    # def __iter__(self):
+    #     yield self._get_field_values(self.input_fields)
+    #     yield self._get_field_values(self.target_fields)

@@ -28,20 +28,12 @@ class Dataset(object):
             if make_list:
                 examples = list(examples)
         self.examples = examples
-
-        if isinstance(fields, dict):
-            fields, field_dict = {}, fields
-            for fs in field_dict.values():
+        self.fields = dict(fields)
+        for key, fs in list(self.fields.items()):
+            if isinstance(fs, dict):
                 for n, f in fs.items():
-                    assert n not in fields
-                    fields[n] = f
-        else:
-            fields, field_list = {}, fields
-            for fs in field_list:
-                for n, f in fs.items():
-                    assert n not in fields
-                    fields[n] = f
-        self.fields = fields
+                    self.fields['%s.%s' % (key, n)] = f
+                del self.fields[key]
 
     def __getitem__(self, i):
         return self.examples[i]
@@ -58,8 +50,8 @@ class Dataset(object):
 
     def __getattr__(self, attr):
         if attr in self.fields:
-            for x in self.examples:
-                yield getattr(x, attr)
+            for ex in self.examples:
+                yield ex[attr]
 
 
 class LazyDataset(object):

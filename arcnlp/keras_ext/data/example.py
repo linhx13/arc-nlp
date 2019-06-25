@@ -1,11 +1,28 @@
 # -*- coding: utf-8 -*-
 
+from typing import Mapping, Any
 
-class Example(object):
+
+class Example(Mapping[str, Any]):
     """Defines a single training or test example.
 
     Stores each column of the example as an attribute.
     """
+
+    def __init__(self, data=None):
+        self.data = data if data is not None else {}
+
+    def __getitem__(self, key):
+        return self.data[key]
+
+    def __setitem__(self, key, val):
+        self.data[key] = val
+
+    def __len__(self):
+        return len(self.data)
+
+    def __iter__(self):
+        return iter(self.data)
 
     @classmethod
     def from_dict(cls, data, fields):
@@ -13,7 +30,7 @@ class Example(object):
 
         Args:
             data: dict
-            fields: dict[str, dict[str, Field]]
+            fields: list[tuple[str, Union[Field, Dict[str, Field]]]]
         """
         ex = cls()
         for key, fs in fields.items():
@@ -21,8 +38,11 @@ class Example(object):
                 raise ValueError("Specified key %s was not found in the "
                                  "input data" % key)
             if fs is not None:
-                for n, f in fs.items():
-                    setattr(ex, n, f.preprocess(data[key]))
+                if isinstance(fs, dict):
+                    for n, f in fs.items():
+                        ex['%s.%s' % (key, n)] = f.preprocess(data[key])
+                else:
+                    ex[key] = fs.preprocess(data[key])
         return ex
 
     # @classmethod
@@ -35,13 +55,16 @@ class Example(object):
 
         Args:
             data: list
-            fields: list[dict[str, Field]]
+            fields: list[tuple[str, Union[Field, Dict[str, Field]]]]
         """
         ex = cls()
-        for fs, val in zip(fields, data):
+        for (key, fs), val in zip(fields, data):
             if fs is not None:
-                for n, f in fs.items():
-                    setattr(ex, n, f.preprocess(val))
+                if isinstance(fs, dict):
+                    for n, f in fs.items():
+                        ex['%s.%s' % (key, n)] = f.preprocess(val)
+                else:
+                    ex[key] = fs.preprocess(val)
         return ex
 
     # @classmethod
