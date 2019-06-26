@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from six.moves import filter
+import os
 
 from .example import Example
 
@@ -39,10 +39,7 @@ class Dataset(object):
         return self.examples[i]
 
     def __len__(self):
-        try:
-            return len(self.examples)
-        except TypeError:
-            return 2 ** 32
+        return len(self.examples)
 
     def __iter__(self):
         for x in self.examples:
@@ -52,6 +49,40 @@ class Dataset(object):
         if attr in self.fields:
             for ex in self.examples:
                 yield ex[attr]
+
+    @classmethod
+    def splits(cls, path=None, root='.data', train=None, validation=None,
+               test=None, **kwargs):
+        """Create Dataset objects for multiple splits of a dataset.
+
+        Args:
+            path (str): Common prefix of the splits' file paths, or None to use
+                the result of cls.download(root).
+            root (str): Root dataset storage directory. Default is '.data'.
+            train (str): Suffix to add to path for the train set, or None for no
+                train set. Default is None.
+            validation (str): Suffix to add to path for the validation set, or None
+                for no validation set. Default is None.
+            test (str): Suffix to add to path for the test set, or None for no test
+                set. Default is None.
+            Remaining keyword arguments: Passed to the constructor of the
+                Dataset (sub)class being used.
+
+        Returns:
+            Tuple[Dataset]: Datasets for train, validation, and
+            test splits in that order, if provided.
+
+            path (str): Common prefix of the splits' file paths, or None to use
+        """
+        assert path is not None
+        train_data = None if train is None else cls(
+            os.path.join(path, train), **kwargs)
+        val_data = None if validation is None else cls(
+            os.path.join(path, validation), **kwargs)
+        test_data = None if test is None else cls(
+            os.path.join(path, test), **kwargs)
+        return tuple(d for d in (train_data, val_data, test_data)
+                     if d is not None)
 
 
 class LazyDataset(object):
