@@ -45,7 +45,7 @@ class JiebaTokenizer(object):
         for key, value in seg_dict.items():
             self.trie[self.t.tokenizer.lcut(key)] = value
 
-    def __call__(self, s: str) -> List[Token]:
+    def tokenize(self, s: str) -> List[Token]:
         res = []
         term_list = list(self.t.cut(s))
         text_list = [x.word for x in term_list]

@@ -3,7 +3,7 @@
 import unittest
 import os
 
-from arcnlp.tokenizer import JiebaTokenizer
+from arcnlp.tokenizers import JiebaTokenizer
 
 PWD = os.path.dirname(os.path.abspath(__file__))
 
@@ -17,12 +17,12 @@ class TestTokenizer(unittest.TestCase):
         s = "这个乒乓球拍卖多少？"
         for i in range(200000):
             ss = '%s%d' % (s, i)
-            for x in self.tokenizer(ss):
+            for x in self.tokenizer.tokenize(ss):
                 pass
 
     def test_simple(self):
         s = "这个乒乓球拍卖多少？"
-        print(self.tokenizer(s))
+        print(self.tokenizer.tokenize(s))
 
 
 if __name__ == '__main__':

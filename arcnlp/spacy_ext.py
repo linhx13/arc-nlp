@@ -3,19 +3,19 @@
 from spacy.tokens import Doc, Token
 from spacy.lang import zh
 
-from . import tokenizer
+from . import tokenizers
 
 
 class JiebaTokenizer(object):
     def __init__(self, vocab, user_dict=None):
         self.vocab = vocab
         self.user_dict = set()
-        self.t = tokenizer.JiebaTokenizer()
+        self.t = tokenizers.JiebaTokenizer()
         self.load_user_dict(user_dict)
         Token.set_extension("pos", default=None, force=True)
 
     def __call__(self, text):
-        tokens = self.t(text)
+        tokens = self.t.tokenize(text)
         words = [x.text for x in tokens]
         spaces = [False] * len(words)
         doc = Doc(self.vocab, words=words, spaces=spaces)
