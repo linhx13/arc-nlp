@@ -7,6 +7,7 @@ import itertools
 import math
 
 from scipy.stats import entropy
+from pygtrie import CharTrie
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +18,8 @@ class WordInfo(object):
     def __init__(self, text):
         self.text = text
         self.count = 0
-        self.left_neighbours = Counter()
-        self.right_neighbours = Counter()
+        self.left_neighbours = Counter() # char -> int
+        self.right_neighbours = Counter()  # char -> int
 
     def __str__(self):
         ''' Get short string representation of this word info. '''
@@ -44,8 +45,8 @@ class WordFinder(object):
     WHITESPACE_PATTERN = re.compile(u'\s+')
 
     def __init__(self, sentences=None, max_word_len=5, min_count=5,
-                 min_cohension=1.0, min_freedom=0.5, max_vocab_size=40000000,
-                 progress_per=10000):
+                 min_cohension=0.5, min_freedom=0.7, max_vocab_size=40000000,
+                 progress_per=1000):
         if max_word_len <= 0:
             raise ValueError('max_word_len should be at least 1')
         if min_count <= 0:
@@ -62,7 +63,7 @@ class WordFinder(object):
         self.max_vocab_size = max_vocab_size
         self.progress_per = progress_per
         self.corpus_count = 0
-        self.vocab = {}
+        self.vocab = CharTrie()
 
         if sentences is not None:
             self.fit(sentences)
@@ -203,8 +204,6 @@ class WordFinder(object):
         info = vocab[word]
         parts = list(WordFinder._get_subparts(word))
         parts = list(filter(lambda p: p[0] in vocab and p[1] in vocab, parts))
-        if parts:
-            print(word, parts)
         c = min(map(lambda p: 1.0 * info.count /
                     (vocab[p[0]].count * vocab[p[1]].count),
                     parts)) if parts else 1e-6
