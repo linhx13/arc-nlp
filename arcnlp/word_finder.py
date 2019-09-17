@@ -7,7 +7,7 @@ import itertools
 import math
 
 from scipy.stats import entropy
-from pygtrie import CharTrie
+import ahocorasick
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class WordFinder(object):
     WHITESPACE_PATTERN = re.compile(u'\s+')
 
     def __init__(self, sentences=None, max_word_len=5, min_count=5,
-                 min_cohension=0.5, min_freedom=0.7, max_vocab_size=40000000,
+                 min_cohension=0.3, min_freedom=0.7, max_vocab_size=40000000,
                  progress_per=1000):
         if max_word_len <= 0:
             raise ValueError('max_word_len should be at least 1')
@@ -63,7 +63,7 @@ class WordFinder(object):
         self.max_vocab_size = max_vocab_size
         self.progress_per = progress_per
         self.corpus_count = 0
-        self.vocab = CharTrie()
+        self.vocab = ahocorasick.Automaton()
 
         if sentences is not None:
             self.fit(sentences)
@@ -95,12 +95,12 @@ class WordFinder(object):
                                                  self.max_word_len):
                     word = ''.join(sentence[suf[0]:suf[1]])
                     if word not in self.vocab:
-                        self.vocab[word] = WordInfo(word)
+                        self.vocab.add_word(word, WordInfo(word))
                     logger.debug('suf:%s, word:%s, left:%s, right:%s' %
                                  (suf, word, sentence[suf[0] - 1],
                                   sentence[suf[1]]))
-                    self.vocab[word].update(sentence[suf[0] - 1],
-                                            sentence[suf[1]])
+                    self.vocab.get(word).update(sentence[suf[0] - 1],
+                                                sentence[suf[1]])
             except Exception as ex:
                 logger.warn('Processing error: %s', ex)
                 continue
@@ -171,11 +171,12 @@ class WordFinder(object):
                              'is not same' %
                              (self.max_word_len, other.max_word_len))
         self.corpus_count += other.corpus_count
-        for word, other_info in other.vocab.iteritems():
+        for word, other_info in other.vocab.items():
             this_info = self.vocab.get(word, WordInfo(word))
             this_info.count += other_info.count
             this_info.left_neighbours.update(other_info.left_neighbours)
             this_info.right_neighbours.update(other_info.right_neighbours)
+            self.vocab.add_word(word, this_info)
 
     def export_words(self):
         ''' Export an iterator that contains all words according to the params.
@@ -201,18 +202,18 @@ class WordFinder(object):
 
     @staticmethod
     def _cohension_scorer(word, vocab, corpus_count):
-        info = vocab[word]
+        info = vocab.get(word)
         parts = list(WordFinder._get_subparts(word))
         parts = list(filter(lambda p: p[0] in vocab and p[1] in vocab, parts))
         c = min(map(lambda p: 1.0 * info.count /
-                    (vocab[p[0]].count * vocab[p[1]].count),
+                    (vocab.get(p[0]).count * vocab.get(p[1]).count),
                     parts)) if parts else 1e-6
         return math.log(c * corpus_count) / \
             -math.log(1.0 * info.count / corpus_count)
 
     @staticmethod
     def _freedom_scorer(word, vocab):
-        info = vocab[word]
+        info = vocab.get(word)
         left_entropy = entropy(list(info.left_neighbours.values()))
         right_entropy = entropy(list(info.right_neighbours.values()))
         return min(left_entropy, right_entropy)
@@ -228,7 +229,7 @@ class WordFinder(object):
 
     @staticmethod
     def _total_scorer(word, vocab, cohension, freedom):
-        info = vocab[word]
+        info = vocab.get(word)
         return info.count * (cohension + freedom)
 
 
