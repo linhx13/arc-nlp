@@ -48,6 +48,26 @@ class StopWords(object):
             text = "".join(text)
         return text
 
+    def lstrip(self, text):
+        is_str = False
+        if isinstance(text, str):
+            text = [t.text for t in self.t.tokenize(text)]
+            is_str = True
+        text = self._strip(self.fw_trie, text)
+        if is_str:
+            text = "".join(text)
+        return text
+
+    def rstrip(self, text):
+        if_str = False
+        if isinstance(text, str):
+            text = [t.text for t in self.t.tokenize(text)]
+            is_str = True
+        text = self._strip(self.bw_trie, text[::-1])[::-1]
+        if is_str:
+            text = "".join(text)
+        return text
+
     def _strip(self, trie, words):
         idx = 0
         while idx < len(words):
