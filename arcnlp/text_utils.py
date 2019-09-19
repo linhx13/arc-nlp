@@ -137,7 +137,7 @@ def convert_fh(text, *maps, **ops):
     """
     if "skip" in ops:
         skip = ops["skip"]
-        if isinstance(skip, basestring):
+        if isinstance(skip, str):
             skip = tuple(skip)
 
         def replace(text, fr, to):
@@ -157,17 +157,17 @@ def convert_fh(text, *maps, **ops):
 
 
 def find_ngrams(seq, n):
-    return six.moves.zip(*[itertools.islice(seq, i, None) for i in xrange(n)])
+    return list(six.moves.zip(*[itertools.islice(seq, i, None) for i in range(n)]))
 
 
 def extract_ngrams(sequence, ngram_range, sep=None):
     sequence = list(sequence)
     it = itertools.chain \
         .from_iterable(find_ngrams(sequence, n)
-                       for n in xrange(ngram_range[0], ngram_range[1]+1))
+                       for n in range(ngram_range[0], ngram_range[1]+1))
     if sep is not None:
         it = six.moves.map(sep.join, it)
-    return it
+    return list(it)
 
 
 URL = u'(?:(?:https?|ftp|file)://|www\.|ftp\.)[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]'
