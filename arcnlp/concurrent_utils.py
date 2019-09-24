@@ -38,6 +38,8 @@ def worker_func(func, input_queue, output_queue):
             break
         try:
             result = func(task.payload)
+            if result is None:
+                continue
         except Exception as ex:
             logger.warn("work_func process func error: %s" % ex)
             continue
@@ -59,7 +61,7 @@ def output_func(output_queue, num_workers):
 
 class SimplePool(object):
     def __init__(self, processes=None):
-        self.processes = processes if processes is not None else cpu_count()
+        self.processes = processes if processes > 0 else cpu_count()
 
     def __enter__(self):
         return self
