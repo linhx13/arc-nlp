@@ -9,7 +9,7 @@ from ..data import Field
 
 def create_inputs(features: Dict[str, Field]):
     inputs = {n: tf.keras.layers.Input(shape=(f.fix_length,), name=n)
-              for n, f in features.items}
+              for n, f in features.items()}
     return inputs
 
 

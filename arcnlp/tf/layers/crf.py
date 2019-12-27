@@ -12,9 +12,9 @@ from tensorflow.keras import constraints
 from tensorflow.keras.layers import Layer
 from tensorflow.keras.layers import InputSpec
 
-from arcnlp_tf.losses import crf_loss
-from arcnlp_tf.metrics import crf_marginal_accuracy
-from arcnlp_tf.metrics import crf_viterbi_accuracy
+from ..losses import crf_loss
+from ..metrics import crf_marginal_accuracy
+from ..metrics import crf_viterbi_accuracy
 
 
 def to_tuple(shape):

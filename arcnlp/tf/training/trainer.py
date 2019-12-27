@@ -10,9 +10,9 @@ from typing import Tuple
 import tensorflow as tf
 import numpy as np
 
-from arcnlp_tf.data import DataHandler, Dataset, DataGenerator
-from arcnlp_tf.models import BaseModel, model_classes
-from arcnlp_tf import utils
+from ..data import DataHandler, Dataset, DataGenerator
+# from ..models import BaseModel, model_classes
+from .. import utils
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ EPOCH_MODLE_FILE = 'model.epoch_%d.h5'
 class Trainer(object):
 
     def __init__(self,
-                 model: BaseModel,
+                 model: tf.keras.models.Model,
                  data_handler: DataHandler,
                  optimizer='adam',
                  loss="categorical_crossentropy",
@@ -40,7 +40,7 @@ class Trainer(object):
 
     @classmethod
     def from_path(cls, path: str, epoch: int = None):
-        model, data_handler = load_model(path, epoch)
+        model, data_handler = load_model_data(path, epoch)
         return cls(model, data_handler)
 
     def train(self,
@@ -54,11 +54,9 @@ class Trainer(object):
               data_gen_type: str = 'sequence',
               model_dir: str = None,
               **fit_kwargs):
-        if self.model.tf_model is None:
-            self.model.build_model()
-        self.model.tf_model.compile(
+        self.model.compile(
             optimizer=self.optimizer, loss=self.loss, metrics=self.metrics)
-        self.model.tf_model.summary()
+        self.model.summary()
 
         if model_dir:
             utils.mkdir_p(model_dir)
@@ -72,7 +70,7 @@ class Trainer(object):
             with open(os.path.join(model_dir, DATA_HANDLER_FILE), 'wb') as fp:
                 pickle.dump(self.data_handler, fp)
             with open(os.path.join(model_dir, MODEL_CONFIG_FILE), 'w') as fp:
-                fp.write(self.model.tf_model.to_json())
+                fp.write(self.model.to_json())
 
         training_data = self._create_data(train_dataset, batch_size,
                                           data_gen_type)
@@ -95,13 +93,12 @@ class Trainer(object):
             fit_kwargs['validation_split'] = validation_split
 
         if data_gen_type == 'arrays':
-            history = self.model.tf_model.fit(training_data[0],
-                                              training_data[1],
-                                              **fit_kwargs)
+            history = self.model.fit(training_data[0], training_data[1],
+                                     **fit_kwargs)
         elif data_gen_type == 'sequence':
             fit_kwargs.pop("batch_size")
             # fit_kwargs['use_multiprocessing'] = True
-            history = self.model.tf_model.fit(training_data, **fit_kwargs)
+            history = self.model.fit(training_data, **fit_kwargs)
 
         if model_dir:
             best_epoch = int(np.argmax(history.history[validation_metric]))
@@ -116,11 +113,11 @@ class Trainer(object):
         data = self._create_data(dataset, batch_size, data_gen_type,
                                  train=False)
         if data_gen_type == 'arrays':
-            score = self.model.tf_model.evaluate(data[0], data[1],
-                                                 batch_size=batch_size)
+            score = self.model.evaluate(data[0], data[1],
+                                        batch_size=batch_size)
         elif data_gen_type == 'sequence':
-            score = self.model.tf_model.evaluate_generator(data)
-        return dict(zip(self.model.tf_model.metrics_names, score))
+            score = self.model.evaluate_generator(data)
+        return dict(zip(self.model.metrics_names, score))
 
     def _get_callbacks(self, validation_metric, patience, model_dir):
         early_stop = tf.keras.callbacks.EarlyStopping(
@@ -163,23 +160,20 @@ class Trainer(object):
         config['model']['class_name'] = self.model.__class__.__name__
 
 
-def load_model(model_dir, epoch: int = None) -> Tuple[BaseModel, DataHandler]:
+def load_model_data(model_dir, epoch: int = None) \
+        -> Tuple[tf.keras.models.Model, DataHandler]:
     logger.info("Loading data handler ...")
     with open(os.path.join(model_dir, DATA_HANDLER_FILE), 'rb') as fp:
         data_handler = pickle.load(fp)
     logger.info("Loading model ...")
     with open(os.path.join(model_dir, TASK_CONFIG_FILE)) as fp:
         task_config = json.load(fp)
-    model = model_classes[task_config['model']['class_name']](
-        features=data_handler.features, targets=data_handler.targets)
     custom_objects = utils.get_custom_objects()
-    custom_objects.update(model.get_custom_objects())
     if epoch is not None:
         model_file = EPOCH_MODLE_FILE % epoch
     else:
         model_file = MODEL_FILE
     model_file = os.path.join(model_dir, model_file)
-    tf_model = tf.keras.models.load_model(model_file, custom_objects)
-    logger.info("Loaded model from %s" % model_file)
-    model.tf_model = tf_model
+    model = tf.keras.models.load_model(model_file, custom_objects)
+    logger.info("Loading model from %s done" % model_file)
     return model, data_handler

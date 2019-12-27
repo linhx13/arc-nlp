@@ -69,15 +69,15 @@ text_cat = arcnlp.tf.models.TextCNN(
     data_handler.targets,
     text_embedder)
 
-trainer = arcnlp.tf.training.Trainer(text_cat, data_handler)
-trainer.train(train_dataset=train_dataset,
-              validation_dataset=test_dataset,
-              batch_size=32,
-              epochs=3,
-              model_dir=model_dir)
+# trainer = arcnlp.tf.training.Trainer(text_cat, data_handler)
+# trainer.train(train_dataset=train_dataset,
+#               validation_dataset=test_dataset,
+#               batch_size=32,
+#               epochs=3,
+#               model_dir=model_dir)
 
-eval_res = trainer.evaluate(test_dataset)
-print(eval_res)
+# eval_res = trainer.evaluate(test_dataset)
+# print(eval_res)
 
 new_trainer = arcnlp.tf.training.Trainer.from_path(model_dir)
 eval_res = new_trainer.evaluate(test_dataset)

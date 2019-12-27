@@ -6,7 +6,7 @@ import errno
 import numpy as np
 import tensorflow as tf
 
-from arcnlp_tf.layers import seq2vec_encoders
+from .layers import seq2vec_encoders
 
 
 def auto_select_gpu(top_n=1):

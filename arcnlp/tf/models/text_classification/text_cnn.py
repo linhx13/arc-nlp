@@ -2,6 +2,8 @@
 
 from typing import Dict, Iterable
 
+import tensorflow as tf
+
 from .. import utils
 from ...data import Field
 from ...layers.text_embedders import TextEmbedder
@@ -52,7 +54,8 @@ def TextCNN(features: Dict[str, Field],
     encoded_tokens = cnn_encoder(embedded_tokens)
     if dropout:
         encoded_tokens = tf.keras.layers.Dropout(dropout)(encoded_tokens)
-    probs = tf.keras.layers.Dense(
+    prob = tf.keras.layers.Dense(
         len(targets[label_field].vocab), activation='softmax',
         name=label_field)(encoded_tokens)
-    return probs
+    return tf.keras.models.Model(inputs=list(inputs.values()),
+                                 outputs=prob)

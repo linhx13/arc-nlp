@@ -4,7 +4,7 @@ from typing import Iterable, Any, Dict, Union
 from itertools import chain
 from collections import defaultdict
 
-from arcnlp_tf.data import Field, Example, Dataset
+from .. import Field, Example, Dataset
 
 
 class DataHandler(object):

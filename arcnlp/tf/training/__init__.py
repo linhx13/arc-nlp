@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-from .trainer import Trainer, load_model
+from .trainer import Trainer # , load_model
