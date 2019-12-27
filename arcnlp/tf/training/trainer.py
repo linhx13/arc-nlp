@@ -62,11 +62,6 @@ class Trainer(object):
             utils.mkdir_p(model_dir)
 
         if model_dir:
-            task_config = {}
-            task_config['model'] = {}
-            task_config['model']['class_name'] = self.model.__class__.__name__
-            with open(os.path.join(model_dir, TASK_CONFIG_FILE), 'w') as fp:
-                json.dump(task_config, fp)
             with open(os.path.join(model_dir, DATA_HANDLER_FILE), 'wb') as fp:
                 pickle.dump(self.data_handler, fp)
             with open(os.path.join(model_dir, MODEL_CONFIG_FILE), 'w') as fp:

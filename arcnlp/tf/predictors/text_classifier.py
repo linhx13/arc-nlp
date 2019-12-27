@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from typing import Dict, List
+from typing import Dict
 
 from tensorflow.keras.models import Model
 import numpy as np
@@ -25,3 +25,8 @@ class TextClassifierPredictor(Predictor):
         else:
             raise ValueError("Invalid text type: %s" % type(json_dict['text']))
         return self.data_handler.make_example(tokens)
+
+    def decode(self, preds: np.ndarray) -> Dict[str, np.ndarray]:
+        classes = [self.targets[self.label_field].vocab.itos[idx]
+                   for idx in np.argmax(preds, axis=-1)]
+        return {self.label_field: classes}

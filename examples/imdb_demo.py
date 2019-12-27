@@ -57,27 +57,21 @@ text_embedder = arcnlp.tf.layers.text_embedders.BasicTextEmbedder({
 seq2vec_encoder = arcnlp.tf.layers.seq2vec_encoders.CNNEncoder()
 
 arcnlp.tf.utils.config_tf_gpu()
-# text_cat = arcnlp.tf.models.TextClassifier(
-#     data_handler.features,
-#     data_handler.targets,
-#     text_embedder,
-#     seq2vec_encoder,
-#     dropout=0.5)
 
 text_cat = arcnlp.tf.models.TextCNN(
     data_handler.features,
     data_handler.targets,
     text_embedder)
 
-# trainer = arcnlp.tf.training.Trainer(text_cat, data_handler)
-# trainer.train(train_dataset=train_dataset,
-#               validation_dataset=test_dataset,
-#               batch_size=32,
-#               epochs=3,
-#               model_dir=model_dir)
+trainer = arcnlp.tf.training.Trainer(text_cat, data_handler)
+trainer.train(train_dataset=train_dataset,
+              validation_dataset=test_dataset,
+              batch_size=32,
+              epochs=3,
+              model_dir=model_dir)
 
-# eval_res = trainer.evaluate(test_dataset)
-# print(eval_res)
+eval_res = trainer.evaluate(test_dataset)
+print(eval_res)
 
 new_trainer = arcnlp.tf.training.Trainer.from_path(model_dir)
 eval_res = new_trainer.evaluate(test_dataset)
