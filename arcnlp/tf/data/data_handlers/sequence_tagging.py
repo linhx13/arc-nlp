@@ -2,6 +2,7 @@
 
 from typing import Dict, Sequence, Iterable, List
 import logging
+import re
 
 import numpy as np
 
@@ -19,7 +20,7 @@ class SequenceTaggingDataHandler(DataHandler):
                  token_column: str = "token",
                  tag_column: str = "tag",
                  feature_columns: Iterable[str] = None,
-                 separator: str = None,
+                 sep: str = None,
                  sparse_target: bool = True,
                  sort_feature: str = None) -> None:
         if not columns:
@@ -33,7 +34,7 @@ class SequenceTaggingDataHandler(DataHandler):
         self.token_column = token_column
         self.tag_column = tag_column
         self.feature_columns = set(feature_columns) if feature_columns else set()
-        self.separator = separator
+        self.sep = sep
         self.sparse_target = sparse_target
 
         feature_fields = {'tokens': token_fields}
@@ -64,11 +65,14 @@ class SequenceTaggingDataHandler(DataHandler):
                         yield self.make_example(tokens, features, tags)
                     columns = []
                 else:
-                    arr = line.rsplit(self.separator,
+                    arr = line.rsplit(self.sep,
                                       maxsplit=len(self.columns) - 1)
                     if len(arr) != len(self.columns):
-                        logger.warn("Error for line: %s" % line)
-                        continue
+                        if len(arr) == len(self.columns) - 1 and re.match('^\s', line):
+                            arr.insert(0, line[0])
+                        else:
+                            logger.warn("Error format line: %s" % line)
+                            continue
                     for i, column in enumerate(arr):
                         if len(columns) < i + 1:
                             columns.append([])
@@ -80,7 +84,7 @@ class SequenceTaggingDataHandler(DataHandler):
                     for k, v in zip(self.columns, columns)
                     if k is not None
                 }
-                tokens = data['tokens']
+                tokens = data[self.token_column]
                 features = {f: data[f] for f in self.feature_columns}
                 tags = data[self.tag_column]
                 yield self.make_example(tokens, features, tags)

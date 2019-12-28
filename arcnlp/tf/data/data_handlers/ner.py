@@ -16,14 +16,17 @@ class NerDataHanlder(SequenceTaggingDataHandler):
                  **kwargs):
         self.use_seg_feature = use_seg_feature
         if self.use_seg_feature:
-            columns = ['tokens', 'seg', 'tags']
+            columns = ['token', 'seg', 'tag']
+            feature_columns = ['seg']
         else:
-            columns = ['tokens', 'tags']
+            columns = ['token', 'tag']
+            feature_columns = None
         super(NerDataHanlder, self).__init__(
             token_fields=token_fields,
             columns=columns,
-            token_column='tokens',
-            tag_column='tags',
+            token_column='token',
+            tag_column='tag',
+            feature_columns=feature_columns,
             **kwargs)
 
     def get_seg_seq(self, text):
