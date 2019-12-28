@@ -74,5 +74,6 @@ eval_res = trainer.evaluate(test_dataset)
 print(eval_res)
 
 new_trainer = arcnlp.tf.training.Trainer.from_path(model_dir)
+print(new_trainer.model.name)
 eval_res = new_trainer.evaluate(test_dataset)
 print(eval_res)

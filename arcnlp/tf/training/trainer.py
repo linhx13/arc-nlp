@@ -3,7 +3,6 @@
 import os
 import pickle
 import logging
-import json
 from shutil import copyfile
 from typing import Tuple
 
@@ -11,7 +10,6 @@ import tensorflow as tf
 import numpy as np
 
 from ..data import DataHandler, Dataset, DataGenerator
-# from ..models import BaseModel, model_classes
 from .. import utils
 
 logger = logging.getLogger(__name__)
@@ -149,11 +147,6 @@ class Trainer(object):
         else:
             raise ValueError("Invalid data_gen_type: %s" % self.data_gen_type)
 
-    def _get_task_config(self):
-        config = {}
-        config['model'] = {}
-        config['model']['class_name'] = self.model.__class__.__name__
-
 
 def load_model_data(model_dir, epoch: int = None) \
         -> Tuple[tf.keras.models.Model, DataHandler]:
@@ -161,8 +154,6 @@ def load_model_data(model_dir, epoch: int = None) \
     with open(os.path.join(model_dir, DATA_HANDLER_FILE), 'rb') as fp:
         data_handler = pickle.load(fp)
     logger.info("Loading model ...")
-    with open(os.path.join(model_dir, TASK_CONFIG_FILE)) as fp:
-        task_config = json.load(fp)
     custom_objects = utils.get_custom_objects()
     if epoch is not None:
         model_file = EPOCH_MODLE_FILE % epoch

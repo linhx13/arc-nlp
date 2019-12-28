@@ -34,4 +34,5 @@ def TextCNN(features: Dict[str, Field],
         len(targets[label_field].vocab), activation='softmax',
         name=label_field)(encoded_tokens)
     return tf.keras.models.Model(inputs=list(inputs.values()),
-                                 outputs=probs)
+                                 outputs=probs,
+                                 name='TextCNN')

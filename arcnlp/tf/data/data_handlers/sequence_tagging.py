@@ -16,15 +16,14 @@ class SequenceTaggingDataHandler(DataHandler):
     def __init__(self,
                  token_fields: Dict[str, Field],
                  columns: Sequence[str],
-                 token_column: str = "tokens",
-                 tag_column: str = "tags",
+                 token_column: str = "token",
+                 tag_column: str = "tag",
+                 feature_columns: Iterable[str] = None,
                  separator: str = None,
                  sparse_target: bool = True,
                  sort_feature: str = None) -> None:
         if not columns:
             raise ValueError("columns cannot be null")
-        if 'tokens' not in columns:
-            raise ValueError("Cannot find tokens in columns: %s" % (columns,))
         if token_column is None or token_column not in columns:
             raise ValueError("Unknown token column: %s" % token_column)
         if tag_column is None or tag_column not in columns:
@@ -33,9 +32,7 @@ class SequenceTaggingDataHandler(DataHandler):
         self.columns = list(columns)
         self.token_column = token_column
         self.tag_column = tag_column
-        self.feature_columns = set(x for x in self.columns
-                                   if x and x != self.token_column
-                                   and x != self.tag_column)
+        self.feature_columns = set(feature_columns) if feature_columns else set()
         self.separator = separator
         self.sparse_target = sparse_target
 
@@ -61,7 +58,7 @@ class SequenceTaggingDataHandler(DataHandler):
                             for k, v in zip(self.columns, columns)
                             if k is not None
                         }
-                        tokens = data['tokens']
+                        tokens = data[self.token_column]
                         features = {f: data[f] for f in self.feature_columns}
                         tags = data[self.tag_column]
                         yield self.make_example(tokens, features, tags)

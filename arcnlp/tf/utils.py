@@ -6,7 +6,7 @@ import errno
 import numpy as np
 import tensorflow as tf
 
-from .layers import seq2vec_encoders
+from . import layers, losses, metrics
 
 
 def auto_select_gpu(top_n=1):
@@ -120,6 +120,7 @@ def bioes_to_spans(text, tags):
 
 def get_custom_objects():
     custom_objects = {}
-    for value in seq2vec_encoders.encoders.values():
-        custom_objects[value.__name__] = value
+    custom_objects.update(layers.get_module_objects())
+    custom_objects.update(losses.get_module_objects())
+    custom_objects.update(metrics.get_module_objects())
     return custom_objects

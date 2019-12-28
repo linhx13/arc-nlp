@@ -8,18 +8,21 @@ from .. import Field
 
 class Conll2003DataHandler(SequenceTaggingDataHandler):
 
-    _COLUMN_LABELS = ['tokens', 'pos', 'chunk', 'ner']
+    _COLUMNS = ['token', 'pos', 'chunk', 'ner']
 
     def __init__(self,
                  token_fields: Dict[str, Field],
-                 sort_feature: str,
-                 tag_label: str = "ner",
-                 feature_labels: Sequence[str] = (),
-                 sparse_target=True):
+                 tag_column: str = "ner",
+                 feature_columns: Sequence[str] = None,
+                 sparse_target=True,
+                 sort_feature: str = None):
         super(Conll2003DataHandler, self).__init__(
-            token_fields, sort_feature, self._COLUMN_LABELS, tag_label,
-            feature_labels, sparse_target=sparse_target
-        )
+            token_fields=token_fields,
+            columns=self._COLUMNS,
+            tag_column=tag_column,
+            feature_columns=feature_columns,
+            sparse_target=sparse_target,
+            sort_feature=sort_feature)
 
     def _is_divider(self, line: str) -> bool:
         if line.strip() == "":

@@ -26,3 +26,8 @@ class SequenceTaggerPredictor(Predictor):
                 % (len(tokens), len(fea))
             features[k] = fea
         return self.data_handler.make_example(tokens, features)
+
+    def decode(self, preds: np.array) -> Dict[str, np.ndarray]:
+        tags = [[self.targets['tags'].vocab.itos[idx + 2] for idx in tag_idx]
+                for tag_idx in np.argmax(preds, axis=-1)]
+        return {'tags': tags}

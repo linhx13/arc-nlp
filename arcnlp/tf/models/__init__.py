@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# from .base_model import BaseModel
 from .text_classification import *
-# from .simple_tagger import SimpleTagger
-# from .crf_tagger import CrfTagger
+from .simple_tagger import SimpleTagger
+from .crf_tagger import CrfTagger
 # from .malstm import MaLSTM
 
 # _globals = dict(globals())
