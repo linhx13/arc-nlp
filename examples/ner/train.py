@@ -13,21 +13,6 @@ from arcnlp.tf.metrics import crf_accuracy
 logger = logging.getLogger(__name__)
 
 
-def create_datasets(args, data_handler):
-    if not args.test_path and not args.test_size:
-        raise ValueError("test_path and test_size cannot both be none")
-    if args.test_path:
-        train_dataset = data_handler.create_dataset_from_path(args.train_path)
-        test_dataset = data_handler.create_dataset_from_path(args.test_path)
-    else:
-        dataset = data_handler.create_dataset_from_path(args.train_path)
-        train_examples, test_examples = train_test_split(
-            dataset.examples, test_size=args.test_size)
-        train_dataset = arcnlp.tf.data.Dataset(train_examples, dataset.fields)
-        test_dataset = arcnlp.tf.data.Dataset(test_examples, dataset.fields)
-    return train_dataset, test_dataset
-
-
 def run_train(args):
     arcnlp.tf.utils.mkdir_p(args.model_dir)
     token_fields = {
@@ -35,7 +20,8 @@ def run_train(args):
     }
     data_handler = arcnlp.tf.data.NerDataHanlder(
         token_fields, use_seg_feature=args.use_seg_feature)
-    train_dataset, test_dataset = create_datasets(args, data_handler)
+    train_dataset, test_dataset = arcnlp.tf.utils.create_train_test_datasets(
+        data_handler, args.train_path, args.test_path, args.test_size)
     logger.info("train examples: %d, test examples: %d" %
                 (len(train_dataset), len(test_dataset)))
     data_handler.build_vocab(train_dataset, test_dataset)
