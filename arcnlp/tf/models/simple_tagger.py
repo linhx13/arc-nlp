@@ -6,7 +6,7 @@ import tensorflow as tf
 
 from ..data import Field
 from ..layers.text_embedders import TextEmbedder
-from . import utils
+from .. import utils
 
 
 def SimpleTagger(features: Dict[str, Field],

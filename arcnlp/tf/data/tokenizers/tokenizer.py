@@ -6,7 +6,6 @@ import re
 from jieba import posseg
 
 from .token import Token
-from ...utils import get_spacy_model
 
 
 class Tokenizer(object):
@@ -41,6 +40,7 @@ class SpacyTokenizer(Tokenizer):
     def __init__(self,
                  lang: str = 'en_core_web_sm'):
         super(SpacyTokenizer, self).__init__()
+        from ...utils import get_spacy_model
         self.nlp = get_spacy_model(lang, pos_tags=False, parse=False, ner=False)
 
     def tokenize(self, text: str) -> List[Token]:
