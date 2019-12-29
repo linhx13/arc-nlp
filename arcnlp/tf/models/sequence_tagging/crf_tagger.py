@@ -4,10 +4,10 @@ from typing import Dict
 
 import tensorflow as tf
 
-from .. import utils
-from ..data import Field
-from ..layers.text_embedders import TextEmbedder
-from ..layers import CRF
+from ... import utils
+from ...data import Field
+from ...layers.text_embedders import TextEmbedder
+from ...layers import CRF
 
 
 def CrfTagger(features: Dict[str, Field],

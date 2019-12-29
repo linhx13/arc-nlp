@@ -12,7 +12,8 @@ from ...layers.text_embedders import TextEmbedder
 def BiLSTMClassifier(features: Dict[str, Field],
                      targets: Dict[str, Field],
                      text_embedder: TextEmbedder,
-                     lstm_units: int = 200,
+                     lstm_units: int = 128,
+                     lstm_kwargs: Dict = None,
                      hidden_units: int = 100,
                      dropout: float = 0.1,
                      activation='softmax',
@@ -20,8 +21,8 @@ def BiLSTMClassifier(features: Dict[str, Field],
     inputs = utils.create_inputs(features)
     input_tokens = utils.get_text_inputs(inputs, 'tokens')
     embedded_tokens = text_embedder(input_tokens)
-    lstm = tf.keras.layers.LSTM(lstm_units, recurrent_dropout=0.1,
-                                activation='tanh')
+    lstm_kwargs = lstm_kwargs if lstm_kwargs is not None else {}
+    lstm = tf.keras.layers.LSTM(lstm_units, **lstm_kwargs)
     encoded_tokens = tf.keras.layers.Bidirectional(lstm)(embedded_tokens)
     if dropout:
         encoded_tokens = tf.keras.layers.Dropout(dropout)(encoded_tokens)
