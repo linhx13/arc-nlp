@@ -58,7 +58,7 @@ seq2vec_encoder = arcnlp.tf.layers.seq2vec_encoders.CNNEncoder()
 
 arcnlp.tf.utils.config_tf_gpu()
 
-text_cat = arcnlp.tf.models.TextCNN(
+text_cat = arcnlp.tf.models.TextCNNClassifier(
     data_handler.features,
     data_handler.targets,
     text_embedder)

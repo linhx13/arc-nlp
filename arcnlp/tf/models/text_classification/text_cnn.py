@@ -12,7 +12,7 @@ from ...layers.seq2vec_encoders import CNNEncoder
 
 def TextCNNClassifier(features: Dict[str, Field],
                       targets: Dict[str, Field],
-                      text_embedder: TextEmbedder = None,
+                      text_embedder: TextEmbedder,
                       filters: int = 100,
                       kernel_sizes: Iterable[int] = (2, 3, 4, 5),
                       conv_layer_activation='relu',
