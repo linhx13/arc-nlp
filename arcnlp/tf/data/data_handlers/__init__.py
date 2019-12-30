@@ -9,3 +9,4 @@ from .ner import NerDataHanlder
 from .text_classification_json import TextClassficationJsonDataHandler
 from .quora_question_pairs import QuoraQuestionPairsDataHandler
 from .fasttext import FasttextDataHandler
+from .text_matching import TextMatchingDataHandler

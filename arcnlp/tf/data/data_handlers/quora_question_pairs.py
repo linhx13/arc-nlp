@@ -58,7 +58,7 @@ class QuoraQuestionPairsDataHandler(DataHandler):
             data['hypothesis'] = [t.text
                                   for t in self.tokenizer.tokenize(hypothesis)]
         else:
-            data['hypothesis'] = self.hypothesis
+            data['hypothesis'] = hypothesis
         if label is not None:
             data['label'] = label
         fields = dict((k, self.example_fields[k]) for k in data)

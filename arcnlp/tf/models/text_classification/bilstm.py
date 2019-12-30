@@ -9,7 +9,7 @@ from ...data import Field
 from ...layers.text_embedders import TextEmbedder
 
 
-def BiLSTMClassifier(features: Dict[str, Field],
+def BiLstmClassifier(features: Dict[str, Field],
                      targets: Dict[str, Field],
                      text_embedder: TextEmbedder,
                      lstm_units: int = 128,
@@ -34,4 +34,4 @@ def BiLSTMClassifier(features: Dict[str, Field],
         name=label_field)(encoded_tokens)
     return tf.keras.models.Model(inputs=list(inputs.values()),
                                  outputs=probs,
-                                 name="BiLSTMClassifier")
+                                 name="BiLstmClassifier")

@@ -32,7 +32,7 @@ class WhitespaceTokenizer(Tokenizer):
 class JiebaTokenizer(Tokenizer):
 
     def tokenize(self, text: str) -> List[Token]:
-        return [Token(text=x[0], pos=x[1]) for x in posseg.cut(text)]
+        return [Token(text=x.word, pos=x.flag) for x in posseg.cut(text)]
 
 
 class SpacyTokenizer(Tokenizer):

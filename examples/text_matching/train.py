@@ -9,22 +9,10 @@ logger = logging.getLogger(__name__)
 
 
 def build_model(model_type, data_handler, text_embedder):
-    if model_type == 'bow':
-        model = arcnlp.tf.models.BOWClassifier(data_handler.features,
+    if model_type == 'bilstm':
+        model = arcnlp.tf.models.BiLstmMatcher(data_handler.features,
                                                data_handler.targets,
                                                text_embedder)
-    elif model_type == 'text_cnn':
-        model = arcnlp.tf.models.TextCNNClassifier(data_handler.features,
-                                                   data_handler.targets,
-                                                   text_embedder)
-    elif model_type == 'bilstm':
-        model = arcnlp.tf.models.BiLstmClassifier(data_handler.features,
-                                                  data_handler.targets,
-                                                  text_embedder)
-    elif model_type == 'rcnn':
-        model = arcnlp.tf.models.RCNNClassifier(data_handler.features,
-                                                data_handler.targets,
-                                                text_embedder)
     return model
 
 
@@ -32,7 +20,8 @@ def run_train(args):
     token_fields = {
         'word': arcnlp.tf.data.Field()
     }
-    data_handler = arcnlp.tf.data.FasttextDataHandler(token_fields)
+    data_handler = arcnlp.tf.data.TextMatchingDataHandler(token_fields)
+
     train_dataset, test_dataset = arcnlp.tf.utils.create_train_test_datasets(
         data_handler, args.train_path, args.test_path, args.test_size)
     data_handler.build_vocab(train_dataset, test_dataset)
@@ -67,7 +56,7 @@ if __name__ == '__main__':
     parser.add_argument("--test_size", type=float, default=0.1)
     parser.add_argument("--model_dir")
     parser.add_argument("--model_type", required=True,
-                        choices=['bow', 'text_cnn', 'bilstm', 'rcnn'])
+                        choices=['bilstm'])
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--epochs", type=int, default=10)
     args = parser.parse_args()

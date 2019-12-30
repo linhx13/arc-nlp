@@ -3,5 +3,5 @@
 from .basic_classifier import BasicClassifier
 from .text_cnn import TextCNNClassifier
 from .bow import BOWClassifier
-from .bilstm import BiLSTMClassifier
+from .bilstm import BiLstmClassifier
 from .rcnn import RCNNClassifier

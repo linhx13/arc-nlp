@@ -2,4 +2,4 @@
 
 from .text_classification import *
 from .sequence_tagging import *
-# from .malstm import MaLSTM
+from .text_matching import *
