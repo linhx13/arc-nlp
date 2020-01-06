@@ -8,6 +8,7 @@ import tensorflow as tf
 from ... import utils
 from ...data import Field
 from ...layers.text_embedders import TextEmbedder
+from ...layers import Attention
 
 
 def ESIM(features: Dict[str, Field],
@@ -37,10 +38,8 @@ def ESIM(features: Dict[str, Field],
     encoded_premise = lstm(embedded_premise)
     encoded_hypothesis = lstm(embedded_hypothesis)
 
-    aligned_premise = tf.keras.layers.Attention()(
-        [encoded_premise, encoded_hypothesis])
-    aligned_hypothesis = tf.keras.layers.Attention()(
-        [encoded_hypothesis, encoded_premise])
+    aligned_premise = Attention()([encoded_premise, encoded_hypothesis])
+    aligned_hypothesis = Attention()([encoded_hypothesis, encoded_premise])
 
     diff_premise = tf.keras.layers.Subtract()(
         [encoded_premise, aligned_premise])
