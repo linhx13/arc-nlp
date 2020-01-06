@@ -144,6 +144,16 @@ def get_text_inputs(inputs: Dict[str, tf.Tensor], name) -> Dict[str, tf.Tensor]:
     return res
 
 
+def concat_multiple_layers(tensor, layers):
+    outputs = []
+    for layer in layers:
+        outputs.append(layer(tensor))
+    if len(outputs) == 1:
+        return outputs[0]
+    else:
+        return tf.keras.layers.Concatenate()(outputs)
+
+
 def create_train_test_datasets(data_handler: DataHandler,
                                train_path: str,
                                test_path: str = None, test_size: float = 0.1):

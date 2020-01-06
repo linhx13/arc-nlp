@@ -24,7 +24,8 @@ def BiLstmMatcher(features: Dict[str, Field],
     embedded_hypothesis = text_embedder(input_hypothesis)
     lstm_kwargs = lstm_kwargs if lstm_kwargs else {}
     lstm_kwargs['return_sequences'] = False
-    lstm = tf.keras.layers.LSTM(lstm_units, **lstm_kwargs)
+    lstm = tf.keras.layers.Bidirectional(
+        tf.keras.layers.LSTM(lstm_units, **lstm_kwargs))
     encoded_premise = lstm(embedded_premise)
     encoded_hypothesis = lstm(embedded_hypothesis)
     diff_layer = tf.keras.layers.Lambda(
