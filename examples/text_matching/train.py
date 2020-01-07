@@ -7,6 +7,8 @@ import arcnlp.tf
 
 logger = logging.getLogger(__name__)
 
+tf.compat.v1.disable_eager_execution()
+
 
 def build_model(model_type, data_handler, text_embedder):
     if model_type == 'bilstm':
@@ -30,7 +32,7 @@ def run_train(args):
         data_handler, args.train_path, args.test_path, args.test_size)
     data_handler.build_vocab(train_dataset, test_dataset)
     text_embedder = arcnlp.tf.layers.text_embedders.BasicTextEmbedder({
-        'word': tf.keras.layers.Embedding(len(token_fields['word'].vocab), 200)
+        'word': tf.keras.layers.Embedding(len(token_fields['word'].vocab), 200, mask_zero=True)
     })
 
     model = build_model(args.model_type, data_handler, text_embedder)

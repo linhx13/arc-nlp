@@ -21,7 +21,7 @@ class QuoraQuestionPairsDataHandler(DataHandler):
     def __init__(self,
                  token_fields: Dict[str, Field],
                  tokenizer: Tokenizer = None,
-                 sparse_target: bool = True,
+                 sparse_target: bool = False,
                  sort_feature: str = None):
         self.tokenizer = tokenizer or WhitespaceTokenizer()
         label_postprocessing = self._label_sparse if sparse_target \

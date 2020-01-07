@@ -8,7 +8,7 @@ import tensorflow as tf
 from ... import utils
 from ...data import Field
 from ...layers.text_embedders import TextEmbedder
-from ...layers import Attention
+from ...layers import Attention, BOWEncoder
 
 
 def ESIM(features: Dict[str, Field],
@@ -60,14 +60,11 @@ def ESIM(features: Dict[str, Field],
     composed_premise = compose_lstm(combined_premise)
     composed_hypothesis = compose_lstm(combined_hypothesis)
 
-    repr_premise = utils.concat_multiple_layers(
-        composed_premise,
-        [tf.keras.layers.GlobalAveragePooling1D(), tf.keras.layers.GlobalMaxPooling1D()])
-    repr_hypothesis = utils.concat_multiple_layers(
-        composed_hypothesis,
-        [tf.keras.layers.GlobalAveragePooling1D(), tf.keras.layers.GlobalMaxPooling1D()])
-
-    merged = tf.keras.layers.Concatenate()([repr_premise, repr_hypothesis])
+    merged = tf.keras.layers.Concatenate()(
+        [BOWEncoder(averaged=True)(composed_premise),
+         tf.keras.layers.GlobalMaxPooling1D()(composed_premise),
+         BOWEncoder(averaged=True)(composed_hypothesis),
+         tf.keras.layers.GlobalMaxPooling1D()(composed_hypothesis)])
     if dropout:
         merged = tf.keras.layers.Dropout(dropout)(merged)
     if hidden_units:

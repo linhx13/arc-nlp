@@ -18,7 +18,8 @@ class DataGenerator(object):
     def create_data_generator(self, dataset: Dataset, batch_size,
                               train: bool = True):
         if train:
-            kwargs = {'train': True, 'repeat': True}
+            kwargs = {'train': True, 'repeat': True,
+                      'sort_within_batch': True}
         else:
             kwargs = {'train': False, 'repeat': True, 'sort': False}
         data_iter = BucketIterator(dataset, batch_size=batch_size,
