@@ -19,6 +19,10 @@ def build_model(model_type, data_handler, text_embedder):
         model = arcnlp.tf.models.ESIM(data_handler.features,
                                       data_handler.targets,
                                       text_embedder)
+    elif model_type == 'dssm':
+        model = arcnlp.tf.models.DSSM(data_handler.features,
+                                      data_handler.targets,
+                                      text_embedder)
     return model
 
 
@@ -62,7 +66,7 @@ if __name__ == '__main__':
     parser.add_argument("--test_size", type=float, default=0.1)
     parser.add_argument("--model_dir")
     parser.add_argument("--model_type", required=True,
-                        choices=['bilstm', 'esim'])
+                        choices=['bilstm', 'esim', 'dssm'])
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--epochs", type=int, default=10)
     args = parser.parse_args()
