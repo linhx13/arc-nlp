@@ -4,7 +4,7 @@ from typing import Dict
 
 import tensorflow as tf
 
-from ... import utils
+from .. import utils
 from ...data import Field
 from ...layers.text_embedders import TextEmbedder
 
@@ -27,8 +27,8 @@ def DSSM(features: Dict[str, Field],
     encoded_premise = lstm(embedded_premise)
     encoded_hypothesis = lstm(embedded_hypothesis)
 
-    mlp = _build_mlp(mlp_num_layers, mlp_num_units, mlp_num_fan_out,
-                     mlp_activation)
+    mlp = utils.build_mlp(mlp_num_layers, mlp_num_units, mlp_num_fan_out,
+                          mlp_activation)
     encoded_premise = mlp(encoded_premise)
     encoded_hypothesis = mlp(encoded_hypothesis)
     sim = tf.keras.layers.Dot(axes=[1, 1], normalize=True)(
@@ -39,16 +39,3 @@ def DSSM(features: Dict[str, Field],
     return tf.keras.models.Model(inputs=list(inputs.values()),
                                  outputs=preds,
                                  name='DSSM')
-
-
-def _build_mlp(mlp_num_layers, mlp_num_units, mlp_num_fan_out, mlp_activation):
-
-    def _mlp(x):
-        for _ in range(mlp_num_layers):
-            x = tf.keras.layers.Dense(mlp_num_units,
-                                      activation=mlp_activation)(x)
-        x = tf.keras.layers.Dense(mlp_num_fan_out,
-                                  activation=mlp_activation)(x)
-        return x
-
-    return _mlp

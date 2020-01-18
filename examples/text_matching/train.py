@@ -23,12 +23,16 @@ def build_model(model_type, data_handler, text_embedder):
         model = arcnlp.tf.models.DSSM(data_handler.features,
                                       data_handler.targets,
                                       text_embedder)
+    elif model_type == 'arci':
+        model = arcnlp.tf.models.ArcI(data_handler.features,
+                                      data_handler.targets,
+                                      text_embedder)
     return model
 
 
 def run_train(args):
     token_fields = {
-        'word': arcnlp.tf.data.Field()
+        'word': arcnlp.tf.data.Field(fix_length=args.fix_length)
     }
     data_handler = arcnlp.tf.data.TextMatchingDataHandler(token_fields)
 
@@ -64,9 +68,10 @@ if __name__ == '__main__':
     parser.add_argument("--train_path", required=True)
     parser.add_argument("--test_path")
     parser.add_argument("--test_size", type=float, default=0.1)
+    parser.add_argument("--fix_length", type=int)
     parser.add_argument("--model_dir")
     parser.add_argument("--model_type", required=True,
-                        choices=['bilstm', 'esim', 'dssm'])
+                        choices=['bilstm', 'esim', 'dssm', 'arci'])
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--epochs", type=int, default=10)
     args = parser.parse_args()

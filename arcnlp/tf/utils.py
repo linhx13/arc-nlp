@@ -2,14 +2,13 @@
 
 import os
 import errno
-from typing import Dict
 
 import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 
 from . import layers, losses, metrics
-from .data import Field, DataHandler, Dataset
+from .data import DataHandler, Dataset
 
 
 def auto_select_gpu(top_n=1):
@@ -127,21 +126,6 @@ def get_custom_objects():
     custom_objects.update(losses.get_module_objects())
     custom_objects.update(metrics.get_module_objects())
     return custom_objects
-
-
-def create_inputs(features: Dict[str, Field]):
-    inputs = {n: tf.keras.layers.Input(shape=(f.fix_length,), name=n)
-              for n, f in features.items()}
-    return inputs
-
-
-def get_text_inputs(inputs: Dict[str, tf.Tensor], name) -> Dict[str, tf.Tensor]:
-    res = {}
-    for n, t in inputs.items():
-        arr = n.split(".", 1)
-        if arr[0] == name:
-            res[arr[1]] = t
-    return res
 
 
 def create_train_test_datasets(data_handler: DataHandler,
