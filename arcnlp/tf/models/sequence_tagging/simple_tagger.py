@@ -4,9 +4,9 @@ from typing import Dict
 
 import tensorflow as tf
 
+from .. import utils
 from ...data import Field
 from ...layers.text_embedders import TextEmbedder
-from ... import utils
 
 
 def SimpleTagger(features: Dict[str, Field],

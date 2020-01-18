@@ -5,7 +5,7 @@ from typing import Dict
 import tensorflow as tf
 from tensorflow.keras import backend as K
 
-from ... import utils
+from .. import utils
 from ...data import Field
 from ...layers.text_embedders import TextEmbedder
 

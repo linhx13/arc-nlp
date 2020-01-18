@@ -5,7 +5,7 @@ from copy import copy
 
 import tensorflow as tf
 
-from ... import utils
+from .. import utils
 from ...data import Field
 from ...layers.text_embedders import TextEmbedder
 from ...layers import Attention, BOWEncoder

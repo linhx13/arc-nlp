@@ -4,7 +4,7 @@ from typing import Dict
 
 import tensorflow as tf
 
-from ... import utils
+from .. import utils
 from ...data import Field
 from ...layers.text_embedders import TextEmbedder
 from ...layers.seq2vec_encoders import BOWEncoder
