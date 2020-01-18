@@ -27,6 +27,10 @@ def build_model(model_type, data_handler, text_embedder):
         model = arcnlp.tf.models.ArcI(data_handler.features,
                                       data_handler.targets,
                                       text_embedder)
+    elif model_type == 'arcii':
+        model = arcnlp.tf.models.ArcII(data_handler.features,
+                                       data_handler.targets,
+                                       text_embedder)
     return model
 
 
@@ -71,7 +75,7 @@ if __name__ == '__main__':
     parser.add_argument("--fix_length", type=int)
     parser.add_argument("--model_dir")
     parser.add_argument("--model_type", required=True,
-                        choices=['bilstm', 'esim', 'dssm', 'arci'])
+                        choices=['bilstm', 'esim', 'dssm', 'arci', 'arcii'])
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--epochs", type=int, default=10)
     args = parser.parse_args()

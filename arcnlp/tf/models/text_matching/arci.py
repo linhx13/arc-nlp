@@ -30,16 +30,16 @@ def ArcI(features: Dict[str, Field],
     embedded_hypothesis = text_embedder(input_hypothesis)
 
     for _ in range(conv_pool_blocks):
-        embedded_premise = conv_pool_block(embedded_premise,
-                                           conv_filters,
-                                           conv_kernel_size,
-                                           conv_activation,
-                                           pool_size)
-        embedded_hypothesis = conv_pool_block(embedded_hypothesis,
-                                              conv_filters,
-                                              conv_kernel_size,
-                                              conv_activation,
-                                              pool_size)
+        embedded_premise = _conv_pool_block(embedded_premise,
+                                            conv_filters,
+                                            conv_kernel_size,
+                                            conv_activation,
+                                            pool_size)
+        embedded_hypothesis = _conv_pool_block(embedded_hypothesis,
+                                               conv_filters,
+                                               conv_kernel_size,
+                                               conv_activation,
+                                               pool_size)
     encoded_premise = tf.keras.layers.Flatten()(embedded_premise)
     encoded_hypothesis = tf.keras.layers.Flatten()(embedded_hypothesis)
     encoded = tf.keras.layers.Concatenate()(
@@ -57,11 +57,11 @@ def ArcI(features: Dict[str, Field],
                                  name='ArcI')
 
 
-def conv_pool_block(inputs,
-                    filters,
-                    kernel_size,
-                    activation,
-                    pool_size):
+def _conv_pool_block(inputs,
+                     filters,
+                     kernel_size,
+                     activation,
+                     pool_size):
     outputs = tf.keras.layers.Conv1D(filters,
                                      kernel_size,
                                      padding='same',
