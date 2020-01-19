@@ -23,8 +23,8 @@ token_fields = {
 
 data_handler = arcnlp.tf.data.IMDBDataHandler(token_fields)
 
-train_dataset = data_handler.create_dataset_from_path(train_path)
-test_dataset = data_handler.create_dataset_from_path(test_path)
+train_dataset = data_handler.build_dataset_from_path(train_path)
+test_dataset = data_handler.build_dataset_from_path(test_path)
 
 print('train_dataset size: %d' % len(train_dataset))
 print('test_dataset size: %d' % len(test_dataset))

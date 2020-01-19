@@ -25,8 +25,8 @@ data_handler = arcnlp.tf.data.Conll2003DataHandler(
     feature_columns=['pos', 'chunk'],
     sort_feature="tokens.word")
 
-train_dataset = data_handler.create_dataset_from_path(train_path)
-test_dataset = data_handler.create_dataset_from_path(test_path)
+train_dataset = data_handler.build_dataset_from_path(train_path)
+test_dataset = data_handler.build_dataset_from_path(test_path)
 
 print('train_dataset size: %d' % len(train_dataset))
 print('test_dataset size: %d' % len(test_dataset))

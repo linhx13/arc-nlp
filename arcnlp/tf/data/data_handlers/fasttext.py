@@ -40,9 +40,9 @@ class FasttextDataHandler(DataHandler):
                     else:
                         tokens.append(word)
                 if tokens and label:
-                    yield self.make_example(tokens, label)
+                    yield self.build_example(tokens, label)
 
-    def make_example(self, text, label: str = None) -> Example:
+    def build_example(self, text, label: str = None) -> Example:
         data = {}
         if isinstance(text, str):
             data['tokens'] = [t.text for t in self.tokenizer.tokenize(text)]

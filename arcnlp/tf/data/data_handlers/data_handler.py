@@ -20,14 +20,14 @@ class DataHandler(object):
         self.sort_feature = sort_feature or list(self.features.keys())[0]
         self.vocabs = {}  # namespace -> vocab
 
-    def create_dataset_from_path(self, path: str) -> Dataset:
+    def build_dataset_from_path(self, path: str) -> Dataset:
         examples = list(self._read_from_path(path))
         return Dataset(examples, self.fields)
 
     def _read_from_path(self, path: str) -> Iterable[Example]:
         raise NotImplementedError
 
-    def make_example(self, *inputs) -> Example:
+    def build_example(self, *inputs) -> Example:
         raise NotImplementedError
 
     def build_vocab(self, *datasets, **kwargs):

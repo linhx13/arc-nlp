@@ -43,11 +43,11 @@ class QuoraQuestionPairsDataHandler(DataHandler):
         with open(path) as fin:
             reader = csv.DictReader(fin)
             for row in tqdm(reader):
-                yield self.make_example(premise=row['question1'],
-                                        hypothesis=row['question2'],
-                                        label=row['is_duplicate'])
+                yield self.build_example(premise=row['question1'],
+                                         hypothesis=row['question2'],
+                                         label=row['is_duplicate'])
 
-    def make_example(self, premise, hypothesis, label=None) -> Example:
+    def build_example(self, premise, hypothesis, label=None) -> Example:
         data = {}
         if isinstance(premise, str):
             data['premise'] = [t.text

@@ -62,7 +62,7 @@ class SequenceTaggingDataHandler(DataHandler):
                         tokens = data[self.token_column]
                         features = {f: data[f] for f in self.feature_columns}
                         tags = data[self.tag_column]
-                        yield self.make_example(tokens, features, tags)
+                        yield self.build_example(tokens, features, tags)
                     columns = []
                 else:
                     arr = line.rsplit(self.sep,
@@ -87,7 +87,7 @@ class SequenceTaggingDataHandler(DataHandler):
                 tokens = data[self.token_column]
                 features = {f: data[f] for f in self.feature_columns}
                 tags = data[self.tag_column]
-                yield self.make_example(tokens, features, tags)
+                yield self.build_example(tokens, features, tags)
 
     def _is_divider(self, line: str) -> bool:
         return line.strip() == ''
@@ -99,9 +99,9 @@ class SequenceTaggingDataHandler(DataHandler):
         else:
             return np.eye(len(vocab) - 2, dtype=np.int32)[batch]
 
-    def make_example(self, tokens: List[str],
-                     features: Dict[str, List] = None,
-                     tags: List[str] = None) -> Example:
+    def build_example(self, tokens: List[str],
+                      features: Dict[str, List] = None,
+                      tags: List[str] = None) -> Example:
         data = {}
         data['tokens'] = tokens
         if features:

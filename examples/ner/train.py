@@ -20,7 +20,7 @@ def run_train(args):
     }
     data_handler = arcnlp.tf.data.NerDataHanlder(
         token_fields, use_seg_feature=args.use_seg_feature)
-    train_dataset, test_dataset = arcnlp.tf.utils.create_train_test_datasets(
+    train_dataset, test_dataset = arcnlp.tf.utils.build_train_test_datasets(
         data_handler, args.train_path, args.test_path, args.test_size)
     logger.info("train examples: %d, test examples: %d" %
                 (len(train_dataset), len(test_dataset)))

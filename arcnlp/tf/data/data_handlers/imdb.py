@@ -36,9 +36,9 @@ class IMDBDataHandler(DataHandler):
             for fname in glob.iglob(os.path.join(path, label, '*.txt')):
                 with open(fname, 'r', encoding='utf-8') as f:
                     text = f.readline()
-                    yield self.make_example(text, label)
+                    yield self.build_example(text, label)
 
-    def make_example(self, text, label=None) -> Example:
+    def build_example(self, text, label=None) -> Example:
         data = {}
         if isinstance(text, str):
             data['tokens'] = text.split()

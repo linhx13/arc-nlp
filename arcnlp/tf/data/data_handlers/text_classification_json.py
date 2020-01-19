@@ -30,9 +30,9 @@ class TextClassficationJsonDataHandler(DataHandler):
         with open(path, errors='ignore') as fin:
             for line in fin:
                 data = json.loads(line)
-                yield self.make_example(data['text'], data['label'])
+                yield self.build_example(data['text'], data['label'])
 
-    def make_example(self, text, label=None) -> Example:
+    def build_example(self, text, label=None) -> Example:
         data = {}
         if isinstance(text, str):
             data['tokens'] = [t.text for t in self.tokenizer.tokenize(text)]

@@ -33,11 +33,11 @@ class TextMatchingDataHandler(DataHandler):
             for line in fin:
                 line = line.strip('\r\n')
                 arr = line.split('\t')
-                yield self.make_example(premise=arr[0].split(),
-                                        hypothesis=arr[1].split(),
-                                        label=arr[2])
+                yield self.build_example(premise=arr[0].split(),
+                                         hypothesis=arr[1].split(),
+                                         label=arr[2])
 
-    def make_example(self, premise, hypothesis, label=None) -> Example:
+    def build_example(self, premise, hypothesis, label=None) -> Example:
         data = {}
         if isinstance(premise, str):
             data['premise'] = [

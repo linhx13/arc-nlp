@@ -40,7 +40,7 @@ def run_train(args):
     }
     data_handler = arcnlp.tf.data.TextMatchingDataHandler(token_fields)
 
-    train_dataset, test_dataset = arcnlp.tf.utils.create_train_test_datasets(
+    train_dataset, test_dataset = arcnlp.tf.utils.build_train_test_datasets(
         data_handler, args.train_path, args.test_path, args.test_size)
     data_handler.build_vocab(train_dataset, test_dataset)
     text_embedder = arcnlp.tf.layers.text_embedders.BasicTextEmbedder({
