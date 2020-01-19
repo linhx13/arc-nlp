@@ -25,7 +25,7 @@ class SequenceTaggerPredictor(Predictor):
                 "featurizer %s, len(tokens) %d != len(fea) %d" \
                 % (len(tokens), len(fea))
             features[k] = fea
-        return self.data_handler.make_example(tokens, features)
+        return self.data_handler.build_example(tokens, features)
 
     def decode(self, preds: np.array) -> Dict[str, np.ndarray]:
         tags = [[self.targets['tags'].vocab.itos[idx + 2] for idx in tag_idx]

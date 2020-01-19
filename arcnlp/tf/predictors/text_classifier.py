@@ -24,7 +24,7 @@ class TextClassifierPredictor(Predictor):
             tokens = json_dict['text']
         else:
             raise ValueError("Invalid text type: %s" % type(json_dict['text']))
-        return self.data_handler.make_example(tokens)
+        return self.data_handler.build_example(tokens)
 
     def decode(self, preds: np.ndarray) -> Dict[str, np.ndarray]:
         classes = [self.targets[self.label_field].vocab.itos[idx]
