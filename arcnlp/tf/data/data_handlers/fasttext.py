@@ -27,7 +27,7 @@ class FasttextDataHandler(DataHandler):
     def _label_postprocessing(self, batch, vocab):
         return tf.keras.utils.to_categorical(batch, len(vocab))
 
-    def _read_from_path(self, path: str) -> Iterable[Dict]:
+    def read_from_path(self, path: str) -> Iterable[Dict]:
         with open(path, errors='ignore') as fin:
             for line in fin:
                 line = line.strip()

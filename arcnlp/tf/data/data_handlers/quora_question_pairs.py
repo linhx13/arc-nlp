@@ -38,7 +38,7 @@ class QuoraQuestionPairsDataHandler(DataHandler):
     def _label_onehot(self, batch, vocab):
         return tf.keras.utils.to_categorical(batch, len(vocab))
 
-    def _read_from_path(self, path: str) -> Iterable[Dict]:
+    def read_from_path(self, path: str) -> Iterable[Dict]:
         logger.info("Reading data from %s" % path)
         with open(path) as fin:
             reader = csv.DictReader(fin)

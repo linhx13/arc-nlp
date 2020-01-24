@@ -33,7 +33,8 @@ class SequenceTaggingDataHandler(DataHandler):
         self.columns = list(columns)
         self.token_column = token_column
         self.tag_column = tag_column
-        self.feature_columns = set(feature_columns) if feature_columns else set()
+        self.feature_columns = set(
+            feature_columns) if feature_columns else set()
         self.sep = sep
         self.sparse_target = sparse_target
 
@@ -46,7 +47,7 @@ class SequenceTaggingDataHandler(DataHandler):
         super(SequenceTaggingDataHandler, self).__init__(
             feature_fields, target_fields, sort_feature)
 
-    def _read_from_path(self, path: str) -> Iterable[Example]:
+    def read_from_path(self, path: str) -> Iterable[Example]:
         columns = []
         with open(path, encoding='utf-8', errors='ignore') as fin:
             for line in fin:

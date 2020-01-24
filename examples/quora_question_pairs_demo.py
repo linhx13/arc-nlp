@@ -26,14 +26,14 @@ tokenizer = arcnlp.tf.data.tokenizers.SpacyTokenizer()
 data_handler = arcnlp.tf.data.QuoraQuestionPairsDataHandler(
     token_fields, sparse_target=False)
 
-train_dataset = data_handler.build_dataset_from_path(train_path)
+train_dataset = data_handler.create_dataset_from_path(train_path)
 train_examples, dev_examples = train_test_split(train_dataset.examples,
                                                 test_size=0.1)
 print(train_examples[:5])
 print(dev_examples[:5])
 train_dataset = arcnlp.tf.data.Dataset(train_examples, train_dataset.fields)
 dev_dataset = arcnlp.tf.data.Dataset(dev_examples, train_dataset.fields)
-# test_dataset = data_handler.build_dataset_from_path(test_path)
+# test_dataset = data_handler.create_dataset_from_path(test_path)
 
 print(train_dataset.fields)
 print(dev_dataset.fields)

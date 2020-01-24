@@ -4,10 +4,9 @@ import os
 
 import tensorflow as tf
 
-
 import arcnlp.tf
 
-# tf.compat.v1.disable_eager_execution()
+tf.compat.v1.disable_v2_behavior()
 
 train_path = os.path.expanduser("~/datasets/conll-corpora/conll2000/train.txt")
 test_path = os.path.expanduser("~/datasets/conll-corpora/conll2000/test.txt")
@@ -26,8 +25,8 @@ data_handler = arcnlp.tf.data.Conll2000DataHandler(
     tag_column="chunk",
     feature_columns=['pos'])
 
-train_dataset = data_handler.build_dataset_from_path(train_path)
-test_dataset = data_handler.build_dataset_from_path(test_path)
+train_dataset = data_handler.create_dataset_from_path(train_path)
+test_dataset = data_handler.create_dataset_from_path(test_path)
 
 print('train_dataset size: %d' % len(train_dataset))
 print('test_dataset size: %d' % len(test_dataset))
@@ -64,37 +63,38 @@ feature_embedders = {
 }
 
 seq2seq_encoder = tf.keras.layers.Bidirectional(
-    tf.keras.layers.CuDNNLSTM(100, return_sequences=True))
+    tf.keras.layers.LSTM(100, return_sequences=True))
 
 arcnlp.tf.utils.config_tf_gpu()
 
-# tagger = arcnlp_tf.models.CrfTagger(
+# tagger = arcnlp.tf.models.SimpleTagger(
 #     features=data_handler.features,
 #     targets=data_handler.targets,
-#     tokens_embedder=tokens_embedder,
+#     text_embedder=text_embedder,
 #     feature_embedders=feature_embedders,
-#     encoder=seq2seq_encoder,
-#     dropout=0.5
-# )
+#     encoder=seq2seq_encoder)
 
-tagger = arcnlp.tf.models.SimpleTagger(
+# trainer = arcnlp.tf.training.Trainer(tagger, data_handler,
+#                                      optimizer='adam',
+#                                      loss='sparse_categorical_crossentropy',
+#                                      metrics=['acc'])
+
+tagger = arcnlp.tf.models.CrfTagger(
     features=data_handler.features,
     targets=data_handler.targets,
     text_embedder=text_embedder,
     feature_embedders=feature_embedders,
-    encoder=seq2seq_encoder)
+    encoder=seq2seq_encoder,
+    dropout=0.5)
 
-# trainer = arcnlp.tf.training.Trainer(tagger, data_handler,
-#                                      optimizer='adam',
-#                                      loss=crf_loss,
-#                                      metrics=[crf_accuracy])
 trainer = arcnlp.tf.training.Trainer(tagger, data_handler,
                                      optimizer='adam',
-                                     loss='sparse_categorical_crossentropy',
-                                     metrics=['acc'])
+                                     loss=arcnlp.tf.losses.crf_loss,
+                                     metrics=[arcnlp.tf.metrics.crf_accuracy])
+
 trainer.train(train_dataset=train_dataset,
               validation_dataset=test_dataset,
-              validation_metric='val_acc',
+              validation_metric='val_crf_accuracy',
               batch_size=32,
               epochs=3,
               model_dir=model_dir)

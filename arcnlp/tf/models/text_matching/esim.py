@@ -17,7 +17,7 @@ def ESIM(features: Dict[str, Field],
          lstm_units: int = 128,
          lstm_kwargs: Dict = None,
          hidden_units: int = 64,
-         dropout: float = 0.1,
+         dropout: float = 0.5,
          label_field: str = 'label'):
     """ Implementation of
     `"Enhanced LSTM for Natural Language Inference"

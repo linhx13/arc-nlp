@@ -3,11 +3,12 @@
 import os
 
 import tensorflow as tf
-from tensorflow.keras import backend as K
 
 import arcnlp.tf
 from arcnlp.tf.losses import crf_loss
 from arcnlp.tf.metrics import crf_accuracy
+
+tf.compat.v1.disable_v2_behavior()
 
 train_path = os.path.expanduser("~/datasets/conll-corpora/CoNLL-2003/eng.train")
 test_path = os.path.expanduser("~/datasets/conll-corpora/CoNLL-2003/eng.testa")
@@ -25,8 +26,8 @@ data_handler = arcnlp.tf.data.Conll2003DataHandler(
     feature_columns=['pos', 'chunk'],
     sort_feature="tokens.word")
 
-train_dataset = data_handler.build_dataset_from_path(train_path)
-test_dataset = data_handler.build_dataset_from_path(test_path)
+train_dataset = data_handler.create_dataset_from_path(train_path)
+test_dataset = data_handler.create_dataset_from_path(test_path)
 
 print('train_dataset size: %d' % len(train_dataset))
 print('test_dataset size: %d' % len(test_dataset))
@@ -67,7 +68,7 @@ feature_embedders = {
 }
 
 seq2seq_encoder = tf.keras.layers.Bidirectional(
-    tf.keras.layers.CuDNNLSTM(100, return_sequences=True))
+    tf.keras.layers.LSTM(100, return_sequences=True))
 
 arcnlp.tf.utils.config_tf_gpu()
 
