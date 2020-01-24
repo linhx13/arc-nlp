@@ -9,7 +9,7 @@ from typing import Tuple
 import tensorflow as tf
 import numpy as np
 
-from ..data import DataHandler, Dataset, DataGenerator
+from ..data import DataHandler, Dataset
 from .. import utils
 
 logger = logging.getLogger(__name__)
@@ -44,12 +44,10 @@ class Trainer(object):
     def train(self,
               train_dataset: Dataset,
               validation_dataset: Dataset = None,
-              validation_split: float = 0.1,
               validation_metric="val_acc",
               batch_size: int = 32,
               epochs: int = 20,
               patience: int = 3,
-              data_gen_type: str = 'sequence',
               model_dir: str = None,
               **fit_kwargs):
         self.model.compile(
@@ -65,11 +63,11 @@ class Trainer(object):
             with open(os.path.join(model_dir, MODEL_CONFIG_FILE), 'w') as fp:
                 fp.write(self.model.to_json())
 
-        training_data = self._create_data(train_dataset, batch_size,
-                                          data_gen_type)
+        training_data = self.data_handler.get_data_sequence(
+            train_dataset, batch_size, train=True)
         if validation_dataset:
-            validation_data = self._create_data(
-                validation_dataset, batch_size, data_gen_type, train=False)
+            validation_data = self.data_handler.get_data_sequence(
+                validation_dataset, batch_size, train=False)
         else:
             validation_data = None
 
@@ -77,21 +75,12 @@ class Trainer(object):
                                         model_dir)
         fit_kwargs.update({
             "epochs": epochs,
-            "batch_size": batch_size,
             "callbacks": callbacks
         })
         if validation_dataset is not None:
             fit_kwargs['validation_data'] = validation_data
-        elif validation_split > 0.0 and data_gen_type == 'arrays':
-            fit_kwargs['validation_split'] = validation_split
-
-        if data_gen_type == 'arrays':
-            history = self.model.fit(training_data[0], training_data[1],
-                                     **fit_kwargs)
-        elif data_gen_type == 'sequence':
-            fit_kwargs.pop("batch_size")
-            # fit_kwargs['use_multiprocessing'] = True
-            history = self.model.fit(training_data, **fit_kwargs)
+        # fit_kwargs['use_multiprocessing'] = True
+        history = self.model.fit(training_data, **fit_kwargs)
 
         if model_dir:
             best_epoch = int(np.argmax(history.history[validation_metric]))
@@ -101,15 +90,9 @@ class Trainer(object):
 
     def evaluate(self,
                  dataset: Dataset,
-                 batch_size: int = 32,
-                 data_gen_type: str = 'sequence'):
-        data = self._create_data(dataset, batch_size, data_gen_type,
-                                 train=False)
-        if data_gen_type == 'arrays':
-            score = self.model.evaluate(data[0], data[1],
-                                        batch_size=batch_size)
-        elif data_gen_type == 'sequence':
-            score = self.model.evaluate_generator(data)
+                 batch_size: int = 32):
+        data = self.data_handler.get_data_sequence(dataset, batch_size, False)
+        score = self.model.evaluate(data)
         return dict(zip(self.model.metrics_names, score))
 
     def _get_callbacks(self, validation_metric, patience, model_dir):
@@ -134,18 +117,6 @@ class Trainer(object):
         model_path = os.path.join(model_dir, MODEL_FILE)
         copyfile(ckpt_path, model_path)
         logger.info("Saved the best model to %s" % model_path)
-
-    def _create_data(self, dataset: Dataset, batch_size: int,
-                     data_gen_type: str, train: bool = True):
-        data_generator = DataGenerator(self.data_handler)
-        if data_gen_type == 'arrays':
-            return data_generator.create_data_arrays(dataset, batch_size,
-                                                     train)
-        elif data_gen_type == 'sequence':
-            return data_generator.create_data_sequence(dataset, batch_size,
-                                                       train)
-        else:
-            raise ValueError("Invalid data_gen_type: %s" % self.data_gen_type)
 
 
 def load_model_data(model_dir, epoch: int = None) \

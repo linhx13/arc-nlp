@@ -8,29 +8,27 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-__all__ = ['init_random_matrix', 'get_embedding_layer']
 
-
-def init_random_matrix(shape, seed=1337):
-    np_rng = np.random.RandomState(seed)
-    return np_rng.uniform(size=shape, low=0.05, high=-0.05)
-
-
-def get_embedding_layer(embedding_src: Union[str, Dict[str, np.ndarray]],
-                        token_index: Dict[str, int],
-                        **kwargs):
+def build_embedding_layer(embedding_src: Union[str, Dict[str, np.ndarray]],
+                          token_index: Dict[str, int],
+                          **kwargs):
     embedding_dim = None
     embedding_matrix = None
     for key, value in _load_embedding_src(embedding_src):
         if embedding_dim is None:
             embedding_dim = value.shape[0]
-            embedding_matrix = init_random_matrix(
+            embedding_matrix = _init_random_matrix(
                 (len(token_index), embedding_dim))
             idx = token_index.get(key)
             if idx is not None:
                 embedding_matrix[idx] = value
     return tf.keras.layers.Embedding(len(token_index), embedding_dim,
                                      weights=[embedding_matrix], **kwargs)
+
+
+def _init_random_matrix(shape, seed=1337):
+    np_rng = np.random.RandomState(seed)
+    return np_rng.uniform(size=shape, low=0.05, high=-0.05)
 
 
 def _load_embedding_src(embedding_src):

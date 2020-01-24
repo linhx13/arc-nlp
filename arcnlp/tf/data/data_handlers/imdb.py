@@ -28,7 +28,7 @@ class IMDBDataHandler(DataHandler):
     def _label_postprocessing(self, batch, vocab):
         return tf.keras.utils.to_categorical(batch, len(vocab))
 
-    def _read_from_path(self, path: str) -> Iterable[Example]:
+    def read_from_path(self, path: str) -> Iterable[Example]:
         assert os.path.isdir(path), "path %s doesn't exist" % path
         for label in ['pos', 'neg']:
             logger.info("Reading instances from path %s" %

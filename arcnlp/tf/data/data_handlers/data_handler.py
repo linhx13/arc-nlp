@@ -5,6 +5,7 @@ from itertools import chain
 from collections import defaultdict
 
 from .. import Field, Example, Dataset
+from ..data_sequence import DataSequence
 
 
 class DataHandler(object):
@@ -20,11 +21,11 @@ class DataHandler(object):
         self.sort_feature = sort_feature or list(self.features.keys())[0]
         self.vocabs = {}  # namespace -> vocab
 
-    def build_dataset_from_path(self, path: str) -> Dataset:
-        examples = list(self._read_from_path(path))
+    def create_dataset_from_path(self, path: str) -> Dataset:
+        examples = list(self.read_from_path(path))
         return Dataset(examples, self.fields)
 
-    def _read_from_path(self, path: str) -> Iterable[Example]:
+    def read_from_path(self, path: str) -> Iterable[Example]:
         raise NotImplementedError
 
     def build_example(self, *inputs) -> Example:
@@ -79,3 +80,6 @@ class DataHandler(object):
             else:
                 res[key] = (key, val)
         return res
+
+    def get_data_sequence(self, dataset, batch_size, train=True):
+        return DataSequence(dataset, self, batch_size, train)
