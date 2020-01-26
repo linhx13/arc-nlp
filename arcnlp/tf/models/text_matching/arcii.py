@@ -44,7 +44,8 @@ def ArcII(features: Dict[str, Field],
     embedded_cross = matching_layer([conv_1d_premise, conv_1d_hypothesis])
 
     for i in range(len(conv_2d_filters)):
-        embedded_cross = _conv_pool_block(embedded_cross,
+        embedded_cross = _conv_pool_block(i,
+                                          embedded_cross,
                                           conv_2d_filters[i],
                                           conv_2d_kernel_sizes[i],
                                           conv_2d_activation,
@@ -61,7 +62,8 @@ def ArcII(features: Dict[str, Field],
                                  name='ArcII')
 
 
-def _conv_pool_block(inputs,
+def _conv_pool_block(idx,
+                     inputs,
                      filters,
                      kernel_size,
                      activation,
@@ -69,6 +71,8 @@ def _conv_pool_block(inputs,
     outputs = tf.keras.layers.Conv2D(filters,
                                      kernel_size,
                                      activation=activation,
-                                     padding='same')(inputs)
-    outputs = tf.keras.layers.MaxPooling2D(pool_size)(outputs)
+                                     padding='same',
+                                     name="conv_2d_%d" % idx)(inputs)
+    outputs = tf.keras.layers.MaxPooling2D(
+        pool_size, name='max_pooling_2d_%d' % idx)(outputs)
     return outputs
