@@ -47,6 +47,10 @@ def build_model(model_type, data_handler, text_embedder):
         model = arcnlp.tf.models.MVLSTM(data_handler.features,
                                         data_handler.targets,
                                         text_embedder)
+    elif model_type == 'bimpm':
+        model = arcnlp.tf.models.BiMPM(data_handler.features,
+                                       data_handler.targets,
+                                       text_embedder)
     return model
 
 
@@ -94,7 +98,7 @@ if __name__ == '__main__':
     parser.add_argument("--model_type", required=True,
                         choices=['bilstm', 'esim', 'dssm', 'cdssm',
                                  'arci', 'arcii', 'match_pyramid', 'knrm',
-                                 'mvlstm'])
+                                 'mvlstm', 'bimpm'])
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--epochs", type=int, default=10)
     args = parser.parse_args()

@@ -9,3 +9,4 @@ from .arcii import ArcII
 from .match_pyramid import MatchPyramid
 from .knrm import KNRM
 from .mvlstm import MVLSTM
+from .bimpm import BiMPM
