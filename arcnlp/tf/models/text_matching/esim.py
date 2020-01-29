@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from typing import Dict
-from copy import copy
+from copy import deepcopy
 
 import tensorflow as tf
 
@@ -31,7 +31,7 @@ def ESIM(features: Dict[str, Field],
     embedded_premise = text_embedder(input_premise)
     embedded_hypothesis = text_embedder(input_hypothesis)
 
-    lstm_kwargs = lstm_kwargs if copy(lstm_kwargs) else {}
+    lstm_kwargs = deepcopy(lstm_kwargs) if lstm_kwargs else {}
     lstm_kwargs.pop('return_sequences', None)
     lstm = tf.keras.layers.Bidirectional(
         tf.keras.layers.LSTM(lstm_units, return_sequences=True, **lstm_kwargs))
