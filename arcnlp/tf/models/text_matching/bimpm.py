@@ -17,13 +17,15 @@ def BiMPM(features: Dict[str, Field],
           encoder_type: str = "gru",
           encoder_units: int = 100,
           encoder_kwargs: Dict = None,
+          with_full_match: bool = True,
+          with_maxpool_match: bool = True,
+          with_attentive_match: bool = True,
+          with_max_attentive_match: bool = True,
           aggregator_type: str = "gru",
           aggregator_units: int = 100,
           aggregator_kwargs: Dict = None,
           dropout: float = 0.1,
           label_field: str = 'label'):
-    dropout_layer = tf.keras.layers.Dropout(dropout)
-
     if encoder_type == 'gru':
         encoder_cls = tf.keras.layers.GRU
     elif encoder_type == 'lstm':
@@ -38,18 +40,35 @@ def BiMPM(features: Dict[str, Field],
     inputs = utils.create_inputs(features)
 
     input_premise = utils.get_text_inputs(inputs, 'premise')
-    embedded_premise = dropout_layer(text_embedder(input_premise))
-    encoded_premise = dropout_layer(encoder(embedded_premise))
+    embedded_premise = text_embedder(input_premise)
+    if dropout:
+        embedded_premise = tf.keras.layers.Dropout(dropout)(embedded_premise)
+    encoded_premise = encoder(embedded_premise)
+    if dropout:
+        encoded_premise = tf.keras.layers.Dropout(dropout)(encoded_premise)
 
     input_hypothesis = utils.get_text_inputs(inputs, 'hypothesis')
-    embedded_hypothesis = dropout_layer(text_embedder(input_hypothesis))
-    encoded_hypothesis = dropout_layer(encoder(embedded_hypothesis))
+    embedded_hypothesis = text_embedder(input_hypothesis)
+    if dropout:
+        embedded_hypothesis = tf.keras.layers.Dropout(
+            dropout)(embedded_hypothesis)
+    encoded_hypothesis = encoder(embedded_hypothesis)
+    if dropout:
+        encoded_hypothesis = tf.keras.layers.Dropout(
+            dropout)(encoded_hypothesis)
 
-    forward_matcher = BiMPMatching(is_forward=True)
+    matcher_kwargs = {
+        'with_full_match': with_full_match,
+        'with_maxpool_match': with_maxpool_match,
+        'with_attentive_match': with_attentive_match,
+        'with_max_attentive_match': with_max_attentive_match
+    }
+
+    forward_matcher = BiMPMatching(is_forward=True, **matcher_kwargs)
     forward_matching_premise, forward_matching_hypothesis = \
         forward_matcher([encoded_premise, encoded_hypothesis])
 
-    backward_matcher = BiMPMatching(is_forward=False)
+    backward_matcher = BiMPMatching(is_forward=False, **matcher_kwargs)
     backward_matching_premise, backward_matching_hypothesis = \
         backward_matcher([encoded_premise, encoded_hypothesis])
 
@@ -64,13 +83,20 @@ def BiMPM(features: Dict[str, Field],
         aggregator_cls = tf.keras.layers.LSTM
     else:
         raise ValueError("Unknown aggregator_type: %s" % aggregator_type)
-    aggregator_kwargs = deepcopy(aggregator_kwargs) if aggregator_kwargs else {}
+    aggregator_kwargs = deepcopy(
+        aggregator_kwargs) if aggregator_kwargs else {}
     aggregator_kwargs['return_sequences'] = False
     aggregator = tf.keras.layers.Bidirectional(
         aggregator_cls(aggregator_units, **aggregator_kwargs))
 
-    aggregated_premise = dropout_layer(aggregator(matching_premise))
-    aggregated_hypothesis = dropout_layer(aggregator(matching_hypothesis))
+    aggregated_premise = aggregator(matching_premise)
+    if dropout:
+        aggregated_premise = tf.keras.layers.Dropout(
+            dropout)(aggregated_premise)
+    aggregated_hypothesis = aggregator(matching_hypothesis)
+    if dropout:
+        aggregated_hypothesis = tf.keras.layers.Dropout(
+            dropout)(aggregated_hypothesis)
 
     aggregated = tf.keras.layers.Concatenate()(
         [aggregated_premise, aggregated_hypothesis])
