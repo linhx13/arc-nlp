@@ -13,7 +13,7 @@ test_path = '/opt/userhome/ichongxiang/datasets/quora-question-pairs/test.csv'
 
 tf.compat.v1.disable_eager_execution()
 
-model_dir = "malstm_dir"
+model_dir = "quora_question_pairs_model"
 arcnlp.tf.utils.mkdir_p(model_dir)
 
 word_field = arcnlp.tf.data.Field()
@@ -59,20 +59,18 @@ token_embedders = {
 text_embedder = arcnlp.tf.layers.text_embedders.BasicTextEmbedder(
     token_embedders)
 
-# malstm = arcnlp.tf.models.MaLSTM(
-#     data_handler.features,
-#     data_handler.targets,
-#     text_embedder)
-
 arcnlp.tf.utils.config_tf_gpu()
 
-model = arcnlp.tf.models.ESIM(data_handler.features,
-                              data_handler.targets,
-                              text_embedder)
+# model_cls = arcnlp.tf.models.ESIM
+model_cls = arcnlp.tf.models.BiMPM
+
+model = model_cls(data_handler.features,
+                  data_handler.targets,
+                  text_embedder)
 
 trainer = arcnlp.tf.training.Trainer(model, data_handler,
                                      optimizer="adam",
-                                     loss='mean_squared_error',
+                                     loss='categorical_crossentropy',
                                      metrics=['acc'])
 trainer.train(train_dataset=train_dataset,
               validation_dataset=dev_dataset,
