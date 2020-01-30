@@ -4,10 +4,13 @@ from collections import Counter, OrderedDict
 from itertools import chain
 
 import torchtext
+from .vocabs import Vocab
 from .dataset import Dataset
 
 
 class Field(torchtext.data.Field):
+
+    vocab_cls = Vocab
 
     def __init__(self, namespace="tokens", **kwargs):
         kwargs['batch_first'] = True
