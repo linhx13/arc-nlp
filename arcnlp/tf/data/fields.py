@@ -4,7 +4,7 @@ from collections import Counter, OrderedDict
 from itertools import chain
 
 import torchtext
-from torchtext.data import Dataset
+from .dataset import Dataset
 
 
 class Field(torchtext.data.Field):
