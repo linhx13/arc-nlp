@@ -35,3 +35,7 @@ class RandomShuffler(object):
         """Shuffle and return a new list."""
         with self.use_internal_state():
             return random.sample(data, len(data))
+
+
+def split_tokenizer(x):
+    return x.split()

@@ -42,7 +42,8 @@ for n, f in data_handler.features.items():
 for n, f in data_handler.targets.items():
     print(n, len(f.vocab))
 
-x, y = arcnlp.tf.data.Batch(train_dataset.examples[:1], train_dataset)
+batch = arcnlp.tf.data.Batch(train_dataset.examples[:1], train_dataset)
+x, y = batch
 print(x)
 print(y)
 print(len(x))

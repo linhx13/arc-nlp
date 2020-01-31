@@ -302,7 +302,7 @@ def multi_perspective_match_pairwise(tensor_1: tf.Tensor, tensor_2: tf.Tensor,
         A tensor of shape ``(batch, seq_len1, hidden_size)``
     tensor_2 : ``tf.Tensor``
         A tensor of shape ``(batch, seq_len2, hidden_size)``
-    weight : ``torch.Tensor``
+    weight : ``tf.Tensor``
         A tensor of shape ``(num_perspectives, hidden_size)``
 
     Returns

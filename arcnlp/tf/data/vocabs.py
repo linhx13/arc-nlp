@@ -22,7 +22,7 @@ class Vocab(object):
     UNK = '<unk>'
 
     def __init__(self, counter, max_size=None, min_freq=1, specials=['<pad>'],
-                 vectors=None, unk_init=None, vectors_cache=None, specials_first=True):
+                 vectors=None, vectors_cache=None, specials_first=True):
         """Create a Vocab object from a collections.Counter.
 
         Arguments:
@@ -38,9 +38,6 @@ class Vocab(object):
             vectors: One of either the available pretrained vectors
                 or custom pretrained vectors (see Vocab.load_vectors);
                 or a list of aforementioned vectors
-            unk_init (callback): by default, initialize out-of-vocabulary word vectors
-                to zero vectors; can be any function that takes in a Tensor and
-                returns a Tensor of the same size. Default: torch.Tensor.zero_
             vectors_cache: directory for cached vectors. Default: '.vector_cache'
             specials_first: Whether to add special tokens into the vocabulary at first.
                 If it is False, they are added into the vocabulary at last.
