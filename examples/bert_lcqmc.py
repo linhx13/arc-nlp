@@ -14,7 +14,7 @@ arcnlp.tf.utils.config_tf_gpu()
 
 
 MAX_LEN = 128
-BERT_MODEL_PATH = '/opt/userhome/ichongxiang/datasets/chinese_L-12_H-768_A-12'
+BERT_MODEL_PATH = os.path.expanduser("~/datasets/chinese_L-12_H-768_A-12")
 
 
 def load_data(path):
@@ -73,9 +73,9 @@ class DataGenerator():
 
 def train_model():
     train_gen = DataGenerator(
-        load_data('/opt/userhome/ichongxiang/datasets/LCQMC/train.txt'))
+        load_data(os.path.expanduser("~/datasets/LCQMC/train.txt")))
     test_gen = DataGenerator(
-        load_data('/opt/userhome/ichongxiang/datasets/LCQMC/dev.txt'))
+        load_data(os.path.expanduser("~/datasets/LCQMC/dev.txt")))
     token_ids_input = tf.keras.layers.Input(shape=(None,))
     type_ids_input = tf.keras.layers.Input(shape=(None,))
     encoder = arcnlp.tf.layers.BertEncoder(BERT_MODEL_PATH, seq_len=MAX_LEN)
@@ -95,5 +95,20 @@ def train_model():
     model.save('./bert_lcqmc_model.h5')
 
 
+def eval_model():
+    test_gen = DataGenerator(
+        load_data(os.path.expanduser("~/datasets/LCQMC/test.txt")))
+    custom_objects = {
+        'BertEncoder': arcnlp.tf.layers.BertEncoder
+    }
+    model = tf.keras.models.load_model('./bert_lcqmc_model.h5',
+                                       custom_objects=custom_objects)
+    model.summary()
+    score = model.evaluate(test_gen.__iter__(),
+                           steps=len(test_gen))
+    print(dict(zip(model.metrics_names, score)))
+
+
 if __name__ == '__main__':
-    train_model()
+    # train_model()
+    eval_model()

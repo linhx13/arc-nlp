@@ -14,7 +14,7 @@ arcnlp.tf.utils.config_tf_gpu()
 
 
 MAX_LEN = 128
-BERT_MODEL_PATH = '/opt/userhome/ichongxiang/datasets/chinese_L-12_H-768_A-12'
+BERT_MODEL_PATH = os.path.expanduser("~/datasets/chinese_L-12_H-768_A-12")
 
 
 def load_data(path):
@@ -25,8 +25,8 @@ def load_data(path):
     return data_list
 
 
-train_data = load_data('/opt/userhome/ichongxiang/datasets/senta_data/train.tsv')
-test_data = load_data('/opt/userhome/ichongxiang/datasets/senta_data/test.tsv')
+train_data = load_data(os.path.expanduser("~/datasets/senta_data/train.tsv"))
+test_data = load_data(os.path.expanduser("~/datasets/senta_data/test.tsv"))
 
 
 tokenizer = arcnlp.tf.data.BertTokenizer(os.path.join(BERT_MODEL_PATH, 'vocab.txt'))
