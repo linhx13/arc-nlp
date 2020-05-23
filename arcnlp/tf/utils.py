@@ -11,43 +11,46 @@ from . import layers, losses, metrics
 from .data import DataHandler, Dataset
 
 
-def auto_select_gpu(top_n=1):
+def auto_select_gpu(top_n=1, cuda_visible_devices=None):
     cmd = 'nvidia-smi -q -d Memory |grep -A4 GPU|grep Free'
     gpu_memory = [int(x.split()[2]) for x in os.popen(cmd).readlines()]
+    if not cuda_visible_devices:
+        cuda_visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES")
+    if cuda_visible_devices:
+        gpu_memory = [gpu_memory[int(x)]
+                      for x in cuda_visible_devices.split(",")]
     gpu_devices = np.argsort(gpu_memory) if gpu_memory else []
     return ','.join(map(str, gpu_devices[-top_n:]))
 
 
 def config_tf_gpu(allow_soft_placement: bool = True,
-                  visible_device_list: str = None,
-                  top_n_gpu: int = 1,
+                  cuda_visible_devices: str = None,
+                  top_n_gpus: int = 1,
                   per_process_gpu_memory_fraction: float = 1.0,
                   gpu_allow_growth: bool = True):
     if int(tf.__version__.split('.')[0]) == 1:
         config_tf_v1_gpu(allow_soft_placement,
-                         visible_device_list,
-                         top_n_gpu,
+                         cuda_visible_devices,
+                         top_n_gpus,
                          per_process_gpu_memory_fraction,
                          gpu_allow_growth)
     else:
         config_tf_v2_gpu(allow_soft_placement,
-                         visible_device_list,
-                         top_n_gpu,
+                         cuda_visible_devices,
+                         top_n_gpus,
                          per_process_gpu_memory_fraction,
                          gpu_allow_growth)
 
 
 def config_tf_v1_gpu(allow_soft_placement: bool = True,
-                     visible_device_list: str = None,
-                     top_n_gpu: int = 1,
+                     cuda_visible_devices: str = None,
+                     top_n_gpus: int = 1,
                      per_process_gpu_memory_fraction: float = 1.0,
                      gpu_allow_growth: bool = True):
     config = tf.ConfigProto()
     config.allow_soft_placement = allow_soft_placement
-    if visible_device_list is not None:
-        config.gpu_options.visible_device_list = visible_device_list
-    else:
-        config.gpu_options.visible_device_list = auto_select_gpu(top_n_gpu)
+    config.gpu_options.visible_device_list = \
+        cuda_visible_devices or auto_select_gpu(top_n_gpus)
     config.gpu_options.per_process_gpu_memory_fraction = \
         per_process_gpu_memory_fraction
     config.gpu_options.allow_growth = gpu_allow_growth
@@ -55,13 +58,13 @@ def config_tf_v1_gpu(allow_soft_placement: bool = True,
 
 
 def config_tf_v2_gpu(allow_soft_placement: bool = True,
-                     visible_device_list: str = None,
-                     top_n_gpu: int = 1,
+                     cuda_visible_devices: str = None,
+                     top_n_gpus: int = 1,
                      per_process_gpu_memory_fraction: float = 1.0,
                      gpu_allow_growth: bool = True):
     tf.config.set_soft_device_placement(allow_soft_placement)
-    visible_device_list = visible_device_list or auto_select_gpu(top_n_gpu)
-    visible_device_ids = [int(x) for x in visible_device_list.split(',')]
+    cuda_visible_devices = cuda_visible_devices or auto_select_gpu(top_n_gpus)
+    visible_device_ids = [int(x) for x in cuda_visible_devices.split(',')]
     gpus = tf.config.experimental.list_physical_devices('GPU')
     for i in visible_device_ids:
         tf.config.experimental.set_visible_devices(gpus[i], 'GPU')
