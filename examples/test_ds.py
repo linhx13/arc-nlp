@@ -1,7 +1,7 @@
 import os
-from typing import Dict
+from typing import Dict, List, Union, Iterable
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 
 import tensorflow as tf
 
@@ -9,7 +9,7 @@ sys.path.append("../")
 import arcnlp.tf
 
 
-train_path = os.path.expanduser("~/datasets/LCQMC/train.txt")
+train_path = os.path.expanduser("~/datasets/LCQMC/train_seg.txt")
 print(train_path)
 
 
@@ -36,102 +36,157 @@ def tokenizer(text):
     return jieba.lcut(text)
 
 
+class Vocab:
+
+    def __init__(self, counter):
+        sorted_tokens = sorted(counter.items(), key=lambda x: x[1], reverse=True)
+        self._idx_to_token = [x[0] for x in sorted_tokens]
+        self._token_to_idx = defaultdict()
+        self._token_to_idx.update({tok: idx for idx, tok in enumerate(self._idx_to_token)})
+
+    def __getitem__(self, tokens):
+        if not isinstance(tokens, (list, tuple)):
+            return self._token_to_idx[tokens]
+        else:
+            return [self._token_to_idx[token] for token in tokens]
+
+    def __len__(self):
+        return len(self._idx_to_token)
+
+    def __call__(self, tokens):
+        return self[tokens]
+
+
 class TextFeature:
 
-    def __init__(self, vocab, tokenizer):
-        self.vocab = vocab
+    def __init__(self, tokenizer):
         self.tokenizer = tokenizer
+        self.vocab = None
 
-    def preprocess(self, x):
+    def __call__(self, x) -> List[Union[str, int]]:
         if isinstance(x, tf.Tensor):
-            x = tf.compat.as_text(x.numpy())
-        return self.tokenizer(x)
-
-    def encode(self, x):
-        pass
+            x = x.numpy()
+        if isinstance(x, list):
+            x = [tf.compat.as_text(t) for t in x]
+        elif isinstance(x, str):
+            x = tf.compat.as_text(x)
+            x = self.tokenizer(x)
+        if self.vocab:
+            x = self.vocab(x)
+        return x
 
 
 class Label:
-    def __init__(self, vocab):
-        self.vocab = vocab
+    def __init__(self):
+        self.vocab = None
 
-    def preprocess(self, x):
+    def __call__(self, x) -> Union[str, int]:
         if isinstance(x, tf.Tensor):
             x = x.numpy()
+            if isinstance(x, (str, bytes)):
+                x = tf.compat.as_text(x)
+        if isinstance(x, str) and self.vocab is not None:
+            x = self.vocab[x]
         return x
 
 
 class LCQMC:
 
-    def __init__(self, text_feature, label):
-        self.text_feature = text_feature
-        self.label = label
+    def __init__(self, text_transform, label_transform):
+        self.text_transform = text_transform
+        self.label_transform = label_transform
 
-    def raw_dataset(self, path) -> tf.data.Dataset:
-        ds = tf.data.Dataset.from_generator(
-            lambda: self._read(path),
-            output_types=self.raw_dataset_types(),
-        )
-        return ds
-
-    def _read(self, path) -> Dict:
+    def read_from_path(self, path) -> Iterable[Dict]:
         with open(path) as fin:
             for line in fin:
                 line = line.strip("\r\n")
                 if not line:
                     continue
                 arr = line.split('\t')
-                yield {'premise': arr[0], 'hypothesis': arr[1], 'label': int(arr[2])}
+                yield {'premise': arr[0].split(),
+                       'hypothesis': arr[1].split(),
+                       'label': arr[2]}
 
-    def raw_dataset_types(self):
-        return {"premise": tf.string, 'hypothesis': tf.string, 'label': tf.int32}
-
-    def build_example(self, premise, hypothesis, label=None) -> Dict:
+    def build_example(self, data: Dict) -> Dict:
         example = {}
-        example['premise'] = self.text_feature.preprocess(premise)
-        example['hypothesis'] = self.text_feature.preprocess(hypothesis)
-        if label is not None:
-            example['label'] = self.label.preprocess(label)
+        example['premise'] = self.text_transform(data['premise'])
+        example['hypothesis'] = self.text_transform(data['hypothesis'])
+        if data.get('label') is not None:
+            example['label'] = self.label_transform(data['label'])
         return example
 
-    def build_vocab(self, raw_ds: tf.data.Dataset):
-        token_counter = Counter()
-        for ex in raw_ds:
-            print(ex)
-            for t in self.premise.preprocess(ex['premise']):
-                token_counter[t] += 1
-            for t in self.hypothesis.preprocess(ex['hypothesis']):
-                token_counter[t] += 1
-        print(token_counter)
-        self.premise.vocab = arcnlp.tf.data.Vocab(token_counter)
-        self.hypothesis
+    def build_vocab(self, *raw_examples):
+        text_counter, label_counter = Counter(), Counter()
+        for raw_data in raw_examples:
+            for ex in (raw_data):
+                text_counter.update(self.text_transform(ex['premise']))
+                text_counter.update(self.text_transform(ex['hypothesis']))
+                label_counter[self.label_transform(ex['label'])] += 1
+        print('text_counter:', text_counter)
+        print("label_counter:", label_counter)
+        self.text_transform.vocab = Vocab(text_counter)
+        self.label_transform.vocab = Vocab(label_counter)
+
+    def build_dataset(self, path) -> tf.data.Dataset:
+        examples = list(map(self.build_example, self.read_from_path(path)))
+
+        def _gen():
+            for ex in examples:
+                yield ex
+
+        output_types = {'premise': tf.int32,
+                        'hypothesis': tf.int32,
+                        'label': tf.int32}
+
+        return tf.data.Dataset.from_generator(_gen, output_types=output_types)
+
+    def build_iter(self, dataset, batch_size=32, train=True) -> tf.data.Dataset:
+        padded_shapes = {'premise': [None],
+                         'hypothesis': [None],
+                         'label': []}
+        if train:
+            dataset = dataset.shuffle(batch_size * 100)
+        data = dataset.padded_batch(batch_size, padded_shapes=padded_shapes)
+        dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
+        return dataset
+
+    def build_bucket_iter(self, dataset, batch_size=32, train=True) -> tf.data.Dataset:
+        padded_shapes = {'premise': [None],
+                         'hypothesis': [None],
+                         'label': []}
+        if train:
+            bucket_boundaries = self._bucket_boundaries(batch_size)
+            bucket_batch_sizes = [batch_size] * (len(bucket_boundaries) + 1)
+            dataset = dataset.apply(tf.data.experimental.bucket_by_sequence_length(
+                self.element_length_func, bucket_boundaries, bucket_batch_sizes,
+                padded_shapes=padded_shapes))
+            dataset = dataset.shuffle(10)
+        else:
+            dataset = dataset.padded_batch(batch_size, padded_shapes=padded_shapes)
+        dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
+        return dataset
+
+    def element_length_func(self, example) -> int:
+        return tf.shape(example['premise'])[0]
+
+    def _bucket_boundaries(self, max_length, min_length=8, length_bucket_step=1.1):
+        boundaries = []
+        x = min_length
+        while x < max_length:
+            boundaries.append(x)
+            x = max(x + 1, int(x * length_bucket_step))
+        return boundaries
 
 
-    def build_dataset(self, dataset) -> tf.data.Dataset:
-        pass
+builder = LCQMC(TextFeature(tokenizer), Label())
+# train_ds = builder.raw_dataset(train_path)
+train_examples = builder.read_from_path(train_path)
+builder.build_vocab(train_examples)
+train_ds = builder.build_dataset(train_path)
 
-    def _preprocess_fn(self, example):
-        print('_preprocess_fn:', example)
-        # res = {}
-        # for k, v in self.features.items():
-        #     res[k] = v.preprocess(example[k].numpy())
-        # for k, v in self.targets.items():
-        #     res[k] = v.preprocess(example[k].numpy())
-        # return res
-        return example
+for batch in builder.build_bucket_iter(train_ds).take(3):
+    print(batch)
 
-    def process(self, ds: tf.data.Dataset, batch_size: int) -> tf.data.Dataset:
-        for x in ds.take(1):
-            print(x)
-        ds = ds.map(lambda ex: tf.py_function(func=self._preprocess_fn,
-                                         inp=[ex], Tout=self.raw_dataset_types()))
-        # ds = ds.window(batch_size)
-        return ds
-
-
-
-builder = LCQMC(TextFeature(None, tokenizer), Label(None))
-raw_ds = builder.raw_dataset(train_path)
 # process_ds = builder.process(raw_ds, batch_size=3)
 
 # for idx, ex in enumerate(raw_ds.repeat().take(20)):
@@ -141,27 +196,21 @@ raw_ds = builder.raw_dataset(train_path)
 #     print(ex['premise'].numpy().decode('utf-8'))
 
 
-for idx, ex in enumerate(raw_ds.take(5)):
-    print('=' * 10)
-    ex = builder.build_example(**ex)
-    print(ex)
-
-builder.build_vocab(raw_ds.take(5))
-
-# for batch in raw_ds.window(3).take(2):
+# for idx, ex in enumerate(raw_ds.take(5)):
 #     print('=' * 10)
-#     print(batch)
-#     print(batch['premise'])
-#     for x in batch['premise']:
-#         print(x.numpy().decode('utf-8'))
-#     print(batch['hypothesis'])
-#     for x in batch['hypothesis']:
-#         print(x.numpy().decode('utf-8'))
-#     print(batch['label'])
-#     for x in batch['label']:
-#         print(x.numpy())
+#     ex = builder.build_example(ex)
+#     print(ex)
 
+# builder.build_vocab(raw_ds.take(5))
+# builder.build_dataset(raw_ds.take(5))
 
-# for example in process_ds.take(5):
-#     print('=' * 10)
-#     print(example)
+# l = [1,2,3,4]
+
+# def gen():
+#     with open("./aaa") as fin:
+#         for line in fin:
+#             yield line.strip()
+
+# ds = tf.data.Dataset.from_generator(gen, output_types=tf.string)
+# for x in ds.repeat(2):
+    # print(x)
