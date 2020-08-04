@@ -116,6 +116,9 @@ class Vocab(object):
     def __len__(self):
         return len(self.itos)
 
+    def __getitem__(self, token: str) -> int:
+        return self.stoi[token]
+
     def extend(self, v, sort=False):
         words = sorted(v.itos) if sort else v.itos
         for w in words:

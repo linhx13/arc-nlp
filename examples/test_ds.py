@@ -1,6 +1,7 @@
 import os
 from typing import Dict
 import sys
+from collections import Counter
 
 import tensorflow as tf
 
@@ -35,33 +36,36 @@ def tokenizer(text):
     return jieba.lcut(text)
 
 
-class Text:
+class TextFeature:
 
-    def __init__(self, tokenizer):
+    def __init__(self, vocab, tokenizer):
+        self.vocab = vocab
         self.tokenizer = tokenizer
 
     def preprocess(self, x):
+        if isinstance(x, tf.Tensor):
+            x = tf.compat.as_text(x.numpy())
         return self.tokenizer(x)
+
+    def encode(self, x):
+        pass
 
 
 class Label:
-    def __init__(self):
-        pass
+    def __init__(self, vocab):
+        self.vocab = vocab
 
     def preprocess(self, x):
+        if isinstance(x, tf.Tensor):
+            x = x.numpy()
         return x
 
 
-class LCQMC(object):
+class LCQMC:
 
-    def __init__(self, text, label):
-        self.features = {
-            'premise': text,
-            'hypothesis': text
-        }
-        self.targets = {
-            'label': label
-        }
+    def __init__(self, text_feature, label):
+        self.text_feature = text_feature
+        self.label = label
 
     def raw_dataset(self, path) -> tf.data.Dataset:
         ds = tf.data.Dataset.from_generator(
@@ -81,6 +85,30 @@ class LCQMC(object):
 
     def raw_dataset_types(self):
         return {"premise": tf.string, 'hypothesis': tf.string, 'label': tf.int32}
+
+    def build_example(self, premise, hypothesis, label=None) -> Dict:
+        example = {}
+        example['premise'] = self.text_feature.preprocess(premise)
+        example['hypothesis'] = self.text_feature.preprocess(hypothesis)
+        if label is not None:
+            example['label'] = self.label.preprocess(label)
+        return example
+
+    def build_vocab(self, raw_ds: tf.data.Dataset):
+        token_counter = Counter()
+        for ex in raw_ds:
+            print(ex)
+            for t in self.premise.preprocess(ex['premise']):
+                token_counter[t] += 1
+            for t in self.hypothesis.preprocess(ex['hypothesis']):
+                token_counter[t] += 1
+        print(token_counter)
+        self.premise.vocab = arcnlp.tf.data.Vocab(token_counter)
+        self.hypothesis
+
+
+    def build_dataset(self, dataset) -> tf.data.Dataset:
+        pass
 
     def _preprocess_fn(self, example):
         print('_preprocess_fn:', example)
@@ -102,9 +130,9 @@ class LCQMC(object):
 
 
 
-builder = LCQMC(Text(tokenizer), Label())
+builder = LCQMC(TextFeature(None, tokenizer), Label(None))
 raw_ds = builder.raw_dataset(train_path)
-process_ds = builder.process(raw_ds, batch_size=3)
+# process_ds = builder.process(raw_ds, batch_size=3)
 
 # for idx, ex in enumerate(raw_ds.repeat().take(20)):
 #     print('=' * 10)
@@ -112,6 +140,13 @@ process_ds = builder.process(raw_ds, batch_size=3)
 #     print(ex)
 #     print(ex['premise'].numpy().decode('utf-8'))
 
+
+for idx, ex in enumerate(raw_ds.take(5)):
+    print('=' * 10)
+    ex = builder.build_example(**ex)
+    print(ex)
+
+builder.build_vocab(raw_ds.take(5))
 
 # for batch in raw_ds.window(3).take(2):
 #     print('=' * 10)
@@ -127,6 +162,6 @@ process_ds = builder.process(raw_ds, batch_size=3)
 #         print(x.numpy())
 
 
-for example in process_ds.take(5):
-    print('=' * 10)
-    print(example)
+# for example in process_ds.take(5):
+#     print('=' * 10)
+#     print(example)
