@@ -4,11 +4,12 @@ from typing import Dict
 
 import tensorflow as tf
 
-from ..data import Field
+# from ..data import Field
+from ..data import Transform
 
 
-def create_inputs(features: Dict[str, Field]):
-    inputs = {n: tf.keras.layers.Input(shape=(f.fix_length,), name=n)
+def create_inputs(features: Dict[str, Transform]):
+    inputs = {n: tf.keras.layers.Input(shape=(f.max_len,), name=n)
               for n, f in features.items()}
     return inputs
 

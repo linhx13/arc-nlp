@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from .bilstm import BiLstmMatcher
+from .bilstm import BiLstmMatching
 from .esim import ESIM
 from .dssm import DSSM
 from .cdssm import CDSSM
