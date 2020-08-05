@@ -44,11 +44,5 @@ class TextMatchingData(DatasetBuilder):
         self.text_feature.vocab = Vocab(text_counter)
         self.label.vocab = Vocab(label_counter, unknown_token=None)
 
-    def output_types(self):
-        output_types = {'premise': tf.int32,
-                        'hypothesis': tf.int32,
-                        'label': tf.int32}
-        return output_types
-
     def element_length_func(self, example) -> int:
         return tf.shape(example['premise'])[0]

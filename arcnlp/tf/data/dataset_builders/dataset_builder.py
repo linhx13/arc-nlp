@@ -77,17 +77,13 @@ class DatasetBuilder:
 
     def padded_shapes(self):
         padded_shapes = {}
-        for name, transform in self.features.items():
-            padded_shapes[name] = transform.padded_shape()
-        for name, transform in self.targets.items():
+        for name, transform in chain(self.features.items(), self.targets.items()):
             padded_shapes[name] = transform.padded_shape()
         return padded_shapes
 
     def output_types(self):
         output_types = {}
-        for name, transform in self.features.items():
-            output_types[name] = transform.output_type()
-        for name, transform in self.targets.items():
+        for name, transform in chain(self.features.items(), self.targets.items()):
             output_types[name] = transform.output_type()
         return output_types
 
