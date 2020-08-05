@@ -13,81 +13,9 @@ train_path = os.path.expanduser("~/datasets/LCQMC/train_seg.txt")
 print(train_path)
 
 
-# class Field(arcnlp.tf.data.Field):
-
-#     def __init__(self, **kwargs):
-#         super(Field, self).__init__(**kwargs)
-
-
-# class Example(object):
-
-#     @classmethod
-#     def fromdict(cls, data, fields):
-
-#         ex = cls()
-#         for key, vals in fields.items():
-#             if key not in data:
-#                 raise ValueError
-#             for val in
-
-
 def tokenizer(text):
     import jieba
     return jieba.lcut(text)
-
-
-class Vocab:
-
-    def __init__(self, counter):
-        sorted_tokens = sorted(counter.items(), key=lambda x: x[1], reverse=True)
-        self._idx_to_token = [x[0] for x in sorted_tokens]
-        self._token_to_idx = defaultdict()
-        self._token_to_idx.update({tok: idx for idx, tok in enumerate(self._idx_to_token)})
-
-    def __getitem__(self, tokens):
-        if not isinstance(tokens, (list, tuple)):
-            return self._token_to_idx[tokens]
-        else:
-            return [self._token_to_idx[token] for token in tokens]
-
-    def __len__(self):
-        return len(self._idx_to_token)
-
-    def __call__(self, tokens):
-        return self[tokens]
-
-
-class TextFeature:
-
-    def __init__(self, tokenizer):
-        self.tokenizer = tokenizer
-        self.vocab = None
-
-    def __call__(self, x) -> List[Union[str, int]]:
-        if isinstance(x, tf.Tensor):
-            x = x.numpy()
-        if isinstance(x, list):
-            x = [tf.compat.as_text(t) for t in x]
-        elif isinstance(x, str):
-            x = tf.compat.as_text(x)
-            x = self.tokenizer(x)
-        if self.vocab:
-            x = self.vocab(x)
-        return x
-
-
-class Label:
-    def __init__(self):
-        self.vocab = None
-
-    def __call__(self, x) -> Union[str, int]:
-        if isinstance(x, tf.Tensor):
-            x = x.numpy()
-            if isinstance(x, (str, bytes)):
-                x = tf.compat.as_text(x)
-        if isinstance(x, str) and self.vocab is not None:
-            x = self.vocab[x]
-        return x
 
 
 class LCQMC:
@@ -124,8 +52,8 @@ class LCQMC:
                 label_counter[self.label_transform(ex['label'])] += 1
         print('text_counter:', text_counter)
         print("label_counter:", label_counter)
-        self.text_transform.vocab = Vocab(text_counter)
-        self.label_transform.vocab = Vocab(label_counter)
+        self.text_transform.vocab = arcnlp.tf.vocab.Vocab(text_counter)
+        self.label_transform.vocab = arcnlp.tf.vocab.Vocab(label_counter)
 
     def build_dataset(self, path) -> tf.data.Dataset:
         examples = list(map(self.build_example, self.read_from_path(path)))
@@ -178,7 +106,8 @@ class LCQMC:
         return boundaries
 
 
-builder = LCQMC(TextFeature(tokenizer), Label())
+builder = LCQMC(arcnlp.tf.data.features.TextFeature(tokenizer),
+                arcnlp.tf.data.features.Label())
 # train_ds = builder.raw_dataset(train_path)
 train_examples = builder.read_from_path(train_path)
 builder.build_vocab(train_examples)
