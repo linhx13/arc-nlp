@@ -6,8 +6,10 @@ from .example import Example
 from .dataset import Dataset
 from .iterators import Iterator, BucketIterator
 from .fields import Field, LabelField
-from .features import TextFeature, Label
 from .data_sequence import DataSequence
 from .data_handlers import *
 from .tokenizers import *
 from .embeddings import build_embedding_layer
+
+from .transforms import Transform, TextFeature, Label
+from .dataset_builders import *

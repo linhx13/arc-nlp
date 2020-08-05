@@ -1,25 +1,29 @@
 # -*- coding: utf-8 -*-
 
-from typing import Dict
+from typing import Dict, Union
 
 import tensorflow as tf
 
 from .. import utils
-from ...data import Field
+# from ...data import Field
 from ...layers.text_embedders import TextEmbedder
 
+from ...data import Transform
 
-def BiLstmMatcher(features: Dict[str, Field],
-                  targets: Dict[str, Field],
-                  text_embedder: TextEmbedder,
-                  lstm_units: int = 128,
-                  lstm_kwargs: Dict = None,
-                  hidden_units: int = 64,
-                  dropout: float = 0.1,
-                  label_field: str = 'label'):
+
+def BiLstmMatching(features: Dict[str, Transform],
+                   targets: Dict[str, Transform],
+                   text_embedder,
+                   lstm_units: int = 128,
+                   lstm_kwargs: Dict = None,
+                   hidden_units: int = 64,
+                   dropout: float = 0.1,
+                   label_field: str = 'label'):
     inputs = utils.create_inputs(features)
-    input_premise = utils.get_text_inputs(inputs, 'premise')
-    input_hypothesis = utils.get_text_inputs(inputs, 'hypothesis')
+    # input_premise = utils.get_text_inputs(inputs, 'premise')
+    # input_hypothesis = utils.get_text_inputs(inputs, 'hypothesis')
+    input_premise = inputs['premise']
+    input_hypothesis = inputs['hypothesis']
     embedded_premise = text_embedder(input_premise)
     embedded_hypothesis = text_embedder(input_hypothesis)
     lstm_kwargs = lstm_kwargs if lstm_kwargs else {}
@@ -41,4 +45,4 @@ def BiLstmMatcher(features: Dict[str, Field],
                                   name=label_field)(diff)
     return tf.keras.models.Model(inputs=list(inputs.values()),
                                  outputs=probs,
-                                 name='BiLstmMatcher')
+                                 name='BiLstmMatching')

@@ -106,40 +106,33 @@ class LCQMC:
         return boundaries
 
 
-builder = LCQMC(arcnlp.tf.data.features.TextFeature(tokenizer),
-                arcnlp.tf.data.features.Label())
+# builder = LCQMC(arcnlp.tf.data.features.TextFeature(tokenizer),
+#                 arcnlp.tf.data.features.Label())
+builder = arcnlp.tf.data.TextMatchingData(
+    arcnlp.tf.data.TextFeature(tokenizer),
+    arcnlp.tf.data.Label())
 # train_ds = builder.raw_dataset(train_path)
-train_examples = builder.read_from_path(train_path)
+train_examples = list(builder.read_from_path(train_path))
+for ex in train_examples[:3]:
+    print(ex)
 builder.build_vocab(train_examples)
 train_ds = builder.build_dataset(train_path)
+for x in train_ds.take(3):
+    print(x)
 
-for batch in builder.build_bucket_iter(train_ds).take(3):
+for batch in builder.build_iter(train_ds).take(3):
     print(batch)
 
-# process_ds = builder.process(raw_ds, batch_size=3)
+print(len(builder.text_feature.vocab))
 
-# for idx, ex in enumerate(raw_ds.repeat().take(20)):
-#     print('=' * 10)
-#     print('idx: %d' % idx)
-#     print(ex)
-#     print(ex['premise'].numpy().decode('utf-8'))
+text_embedder = tf.keras.layers.Embedding(len(builder.text_feature.vocab),
+                                          200, mask_zero=True)
 
-
-# for idx, ex in enumerate(raw_ds.take(5)):
-#     print('=' * 10)
-#     ex = builder.build_example(ex)
-#     print(ex)
-
-# builder.build_vocab(raw_ds.take(5))
-# builder.build_dataset(raw_ds.take(5))
-
-# l = [1,2,3,4]
-
-# def gen():
-#     with open("./aaa") as fin:
-#         for line in fin:
-#             yield line.strip()
-
-# ds = tf.data.Dataset.from_generator(gen, output_types=tf.string)
-# for x in ds.repeat(2):
-    # print(x)
+model = arcnlp.tf.models.BiLstmMatching(builder.features,
+                                        builder.targets,
+                                        text_embedder)
+model.summary()
+model.compile(optimizer="adam",
+              loss="categorical_crossentropy",
+              metrics=['acc'])
+model.fit(builder.build_bucket_iter(train_ds), epochs=3)
