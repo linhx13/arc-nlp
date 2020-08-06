@@ -67,15 +67,18 @@ class Trainer(object):
                 val_dataset, batch_size, train=False)
         else:
             val_data = None
+        if val_data is not None:
+            fit_kwargs['validation_data'] = val_data
+        print(val_dataset)
+        print(val_data)
 
         callbacks = self._get_callbacks(val_metric, patience, model_dir)
         fit_kwargs.update({
             "epochs": epochs,
-            "callbacks": callbacks
+            "callbacks": callbacks,
         })
-        if val_data is not None:
-            fit_kwargs['validation_data'] = val_data
-        # fit_kwargs['use_multiprocessing'] = True
+
+        print(train_data)
         history = self.model.fit(train_data, **fit_kwargs)
 
         if model_dir:
@@ -87,7 +90,8 @@ class Trainer(object):
     def evaluate(self,
                  dataset: tf.data.Dataset,
                  batch_size: int = 32):
-        data = self.dataset_builder.get_bucket_batches(dataset, batch_size, False)
+        data = self.dataset_builder.get_bucket_batches(
+            dataset, batch_size, False)
         score = self.model.evaluate(data)
         return dict(zip(self.model.metrics_names, score))
 

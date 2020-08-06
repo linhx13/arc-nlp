@@ -26,6 +26,7 @@ class DatasetBuilder:
     def build_dataset(self, path) -> tf.data.Dataset:
         examples = list(self.read_from_path(path))
         examples = list(self.transform_example(ex) for ex in examples)
+        examples = examples[:1000]
 
         def _gen():
             for ex in examples:
@@ -39,7 +40,8 @@ class DatasetBuilder:
         if train:
             dataset = dataset.shuffle(batch_size * 100)
         dataset = dataset.padded_batch(batch_size, padded_shapes=padded_shapes)
-        dataset = dataset.map(self._collate_fn)
+        dataset = dataset.map(self._collate_fn,
+                              num_parallel_calls=tf.data.experimental.AUTOTUNE)
         dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
         return dataset
 
@@ -53,9 +55,11 @@ class DatasetBuilder:
                 padded_shapes=padded_shapes))
             dataset = dataset.shuffle(10)
         else:
-            dataset = dataset.padded_batch(batch_size, padded_shapes=padded_shapes)
+            dataset = dataset.padded_batch(
+                batch_size, padded_shapes=padded_shapes)
 
-        dataset = dataset.map(self._collate_fn)
+        dataset = dataset.map(self._collate_fn,
+                              num_parallel_calls=tf.data.experimental.AUTOTUNE)
         dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
         return dataset
 
