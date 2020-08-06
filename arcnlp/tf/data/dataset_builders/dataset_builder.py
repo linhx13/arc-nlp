@@ -26,7 +26,6 @@ class DatasetBuilder:
     def build_dataset(self, path) -> tf.data.Dataset:
         examples = list(self.read_from_path(path))
         examples = list(self.transform_example(ex) for ex in examples)
-        examples = examples[:1000]
 
         def _gen():
             for ex in examples:
@@ -87,8 +86,6 @@ class DatasetBuilder:
         return output_types
 
     def _collate_fn(self, batch):
-        features = {name: transform.postprocessing(batch[name])
-                    for name, transform in self.features.items()}
-        targets = {name: transform.postprocessing(batch[name])
-                   for name, transform in self.targets.items()}
+        features = {name: batch[name] for name in self.features.keys()}
+        targets = {name: batch[name] for name in self.targets.keys()}
         return features, targets

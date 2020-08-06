@@ -38,9 +38,9 @@ class TextMatchingData(DatasetBuilder):
         text_counter, label_counter = Counter(), Counter()
         for raw_examples in examples:
             for ex in (raw_examples):
-                text_counter.update(self.text_feature.tokenize(ex['premise']))
-                text_counter.update(self.text_feature.tokenize(ex['hypothesis']))
-                label_counter.update(self.label.tokenize(ex['label']))
+                self.text_feature.count_vocab(ex['premise'], text_counter)
+                self.text_feature.count_vocab(ex['hypothesis'], text_counter)
+                self.label.count_vocab(ex['label'], label_counter)
         self.text_feature.vocab = Vocab(text_counter)
         self.label.vocab = Vocab(label_counter, unknown_token=None)
 

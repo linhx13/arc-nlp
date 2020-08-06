@@ -2,7 +2,7 @@ from typing import Optional, List, Dict, Union
 import json
 import collections
 
-from .constants import UNK_TOKEN
+from .constants import UNK_TOKEN, PAD_TOKEN
 from .data.utils import DefaultLookupDict, count_tokens
 
 UNK_IDX = 0
@@ -13,10 +13,12 @@ class Vocab:
 
     def __init__(self, counter, max_size=None, min_freq=1,
                  unknown_token: Optional[str] = UNK_TOKEN,
-                 reserved_tokens: Optional[List[str]] = None,
+                 reserved_tokens: Optional[List[str]] = [PAD_TOKEN],
                  token_to_idx: Optional[Dict[str, int]] = None):
         assert min_freq > 0, '`min_freq` must be set to a positie value.'
 
+        if unknown_token:
+            if unk
         self._unknown_token = unknown_token
         self._idx_to_token = [unknown_token] if unknown_token else []
         if unknown_token:
