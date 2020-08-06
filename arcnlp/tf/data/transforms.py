@@ -29,7 +29,7 @@ class TextFeature(Transform):
         self.vocab = None
         self.max_len = max_len
 
-    def preprocess(self, x):
+    def __call__(self, x):
         if isinstance(x, tf.Tensor):
             x = x.numpy()
         if isinstance(x, list):
@@ -37,12 +37,9 @@ class TextFeature(Transform):
         else:
             x = tf.compat.as_text(x)
             x = self.tokenizer(x)
+        if self.vocab is not None:
+            x = self.vocab(x)
         return x
-
-    def encode(self, x):
-        if isinstance(x, tf.Tensor):
-            x = x.numpy()
-        return self.vocab(x)
 
     def padded_shape(self):
         return [self.max_len]
@@ -58,17 +55,13 @@ class Label(Transform):
         self.vocab = None
         self.sparse_target = sparse_target
 
-    def preprocess(self, x):
+    def __call__(self, x):
         if isinstance(x, tf.Tensor):
             x = x.numpy()
         if isinstance(x, (str, bytes)):
             x = tf.compat.as_text(x)
-        return x
-
-    def encode(self, x):
-        if isinstance(x, tf.Tensor):
-            x = x.numpy()
-        x = self.vocab(x)
+        if isinstance(x, str) and self.vocab is not None:
+            x = self.vocab(x)
         return x
 
     def postprocessing(self, batch):

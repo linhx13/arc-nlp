@@ -22,22 +22,23 @@ class TextMatchingData(DatasetBuilder):
                 if not line:
                     continue
                 arr = line.split('\t')
-                yield self.build_example(premise=arr[0].split(),
-                                         hypothesis=arr[1].split(),
-                                         label=arr[2])
+                yield {'premise': arr[0].split(),
+                       'hypothesis': arr[1].split(),
+                       'label': arr[2]}
 
-    def build_example(self, premise, hypothesis, label=None) -> Dict:
+    def transform_example(self, data: Dict) -> Dict:
         example = {}
-        example['premise'] = self.text_feature.preprocess(premise)
-        example['hypothesis'] = self.text_feature.preprocess(hypothesis)
-        if label is not None:
-            example['label'] = self.label.preprocess(label)
+        example['premise'] = self.text_feature(data['premise'])
+        example['hypothesis'] = self.text_feature(data['hypothesis'])
+        if data.get('label') is not None:
+            example['label'] = self.label(data['label'])
         return example
 
     def build_vocab(self, *examples):
         text_counter, label_counter = Counter(), Counter()
-        for raw_data in examples:
-            for ex in (raw_data):
+        for raw_examples in examples:
+            for ex in (raw_examples):
+                ex = self.transform_example(ex)
                 text_counter.update(ex['premise'])
                 text_counter.update(ex['hypothesis'])
                 label_counter[ex['label']] += 1

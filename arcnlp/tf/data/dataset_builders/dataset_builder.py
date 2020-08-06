@@ -23,32 +23,29 @@ class DatasetBuilder:
     def build_vocab(self, *examples):
         raise NotImplementedError
 
-    def encode_example(self, example: Dict) -> Dict:
-        res = {}
-        for name, transform in chain(self.features.items(), self.targets.items()):
-            res[name] = transform.encode(example[name])
-        return res
+    def transform_example(self, example: Dict) -> Dict:
+        raise NotImplementedError
 
     def build_dataset(self, path) -> tf.data.Dataset:
         examples = list(self.read_from_path(path))
 
         def _gen():
             for ex in examples:
-                yield self.encode_example(ex)
+                yield self.transform_example(ex)
 
         output_types = self.output_types()
         return tf.data.Dataset.from_generator(_gen, output_types=output_types)
 
-    def build_iter(self, dataset, batch_size=32, train=True) -> tf.data.Dataset:
+    def get_batches(self, dataset, batch_size=32, train=True) -> tf.data.Dataset:
         padded_shapes = self.padded_shapes()
         if train:
             dataset = dataset.shuffle(batch_size * 100)
         dataset = dataset.padded_batch(batch_size, padded_shapes=padded_shapes)
-        dataset = dataset.map(self._batch_pair_fn)
+        dataset = dataset.map(self._collate_fn)
         dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
         return dataset
 
-    def build_bucket_iter(self, dataset, batch_size=32, train=True) -> tf.data.Dataset:
+    def get_bucket_batches(self, dataset, batch_size=32, train=True) -> tf.data.Dataset:
         padded_shapes = self.padded_shapes()
         if train:
             bucket_boundaries = self._bucket_boundaries(batch_size)
@@ -60,7 +57,7 @@ class DatasetBuilder:
         else:
             dataset = dataset.padded_batch(batch_size, padded_shapes=padded_shapes)
 
-        dataset = dataset.map(self._batch_pair_fn)
+        dataset = dataset.map(self._collate_fn)
         dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
         return dataset
 
@@ -87,7 +84,7 @@ class DatasetBuilder:
             output_types[name] = transform.output_type()
         return output_types
 
-    def _batch_pair_fn(self, batch):
+    def _collate_fn(self, batch):
         features = {name: transform.postprocessing(batch[name])
                     for name, transform in self.features.items()}
         targets = {name: transform.postprocessing(batch[name])
