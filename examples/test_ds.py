@@ -25,7 +25,8 @@ builder = arcnlp.tf.data.TextMatchingData(
 # train_ds = builder.raw_dataset(train_path)
 train_examples = list(builder.read_from_path(train_path))
 builder.build_vocab(train_examples)
-
+print(len(builder.text_feature.vocab))
+print(len(builder.label.vocab))
 train_dataset = builder.build_dataset(train_path)
 val_dataset = builder.build_dataset(val_path)
 

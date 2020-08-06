@@ -8,11 +8,11 @@ from .. import utils
 # from ...data import Field
 from ...layers.text_embedders import TextEmbedder
 
-from ...data import Transform
+from ...data import Feature
 
 
-def BiLstmMatching(features: Dict[str, Transform],
-                   targets: Dict[str, Transform],
+def BiLstmMatching(features: Dict[str, Feature],
+                   targets: Dict[str, Feature],
                    text_embedder,
                    lstm_units: int = 128,
                    lstm_kwargs: Dict = None,

@@ -3,22 +3,19 @@ from itertools import chain
 
 import tensorflow as tf
 
-from ..transforms import Transform
+from ..features import Feature
 
 
 class DatasetBuilder:
 
     def __init__(self,
-                 features: Dict[str, Transform],
-                 targets: Dict[str, Transform]):
+                 features: Dict[str, Feature],
+                 targets: Dict[str, Feature]):
         self.features = features
         self.targets = targets
 
-    def read_from_path(self, path) -> Iterable[Dict]:
+    def read_examples(self, path) -> Iterable[Dict]:
         raise NotImplementedError
-
-    def build_example(self, **inputs) -> Dict:
-        return inputs
 
     def build_vocab(self, *examples):
         raise NotImplementedError
@@ -28,10 +25,11 @@ class DatasetBuilder:
 
     def build_dataset(self, path) -> tf.data.Dataset:
         examples = list(self.read_from_path(path))
+        examples = list(self.transform_example(ex) for ex in examples)
 
         def _gen():
             for ex in examples:
-                yield self.transform_example(ex)
+                yield ex
 
         output_types = self.output_types()
         return tf.data.Dataset.from_generator(_gen, output_types=output_types)

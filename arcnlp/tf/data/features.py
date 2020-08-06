@@ -3,15 +3,15 @@ from typing import Union, List, Dict
 import tensorflow as tf
 
 
-class Transform:
+class Feature:
 
     def __init__(self):
         pass
 
-    def preprocess(self, x):
-        return x
+    def tokenize(self, x) -> List[str]:
+        raise NotImplementedError
 
-    def encode(self):
+    def __call__(self, x):
         raise NotImplementedError
 
     def postprocessing(self, batch):
@@ -20,16 +20,20 @@ class Transform:
     def padded_shape(self):
         raise NotImplementedError
 
+    def output_type(self):
+        raise NotImplementedError
 
-class TextFeature(Transform):
 
-    def __init__(self, tokenizer, max_len=None):
+class TextFeature(Feature):
+
+    def __init__(self, tokenizer, max_len=None, lower=False):
         super(TextFeature, self).__init__()
         self.tokenizer = tokenizer
         self.vocab = None
         self.max_len = max_len
+        self.lower = lower
 
-    def __call__(self, x):
+    def tokenize(self, x) -> List[str]:
         if isinstance(x, tf.Tensor):
             x = x.numpy()
         if isinstance(x, list):
@@ -37,9 +41,13 @@ class TextFeature(Transform):
         else:
             x = tf.compat.as_text(x)
             x = self.tokenizer(x)
-        if self.vocab is not None:
-            x = self.vocab(x)
+        if self.lower:
+            x = [t.lower() for t in x]
         return x
+
+    def __call__(self, x) -> List[int]:
+        x = self.tokenize(x)
+        return self.vocab(x)
 
     def padded_shape(self):
         return [self.max_len]
@@ -48,21 +56,23 @@ class TextFeature(Transform):
         return tf.int32
 
 
-class Label(Transform):
+class Label(Feature):
 
     def __init__(self, sparse_target: bool=False):
         super(Label, self).__init__()
         self.vocab = None
         self.sparse_target = sparse_target
 
-    def __call__(self, x):
+    def tokenize(self, x) -> List[str]:
         if isinstance(x, tf.Tensor):
             x = x.numpy()
         if isinstance(x, (str, bytes)):
             x = tf.compat.as_text(x)
-        if isinstance(x, str) and self.vocab is not None:
-            x = self.vocab(x)
-        return x
+        return [x]
+
+    def __call__(self, x) -> int:
+        x = self.tokenize(x)
+        return self.vocab(x[0])
 
     def postprocessing(self, batch):
         if self.sparse_target:
