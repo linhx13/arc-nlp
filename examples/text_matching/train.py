@@ -9,6 +9,7 @@ import arcnlp.tf
 logger = logging.getLogger(__name__)
 
 # tf.compat.v1.disable_eager_execution()
+arcnlp.tf.utils.config_tf_gpu()
 
 
 def build_model(model_type, data_handler, text_embedder):
@@ -79,7 +80,6 @@ def run_train(args):
 
     model = build_model(args.model_type, dataset_builder, text_embedder)
 
-    arcnlp.tf.utils.config_tf_gpu()
     trainer = arcnlp.tf.training.Trainer(model, dataset_builder)
     trainer.train(train_dataset=train_dataset,
                   val_dataset=val_dataset,
