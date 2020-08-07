@@ -26,14 +26,19 @@ class Feature:
 
 class TextFeature(Feature):
 
-    def __init__(self, tokenizer, max_len=None, lower=False,
+    def __init__(self, tokenizer=None, lower=False, max_len=None,
                  bos_token=None, eos_token=None, pad_token=PAD_TOKEN,
                  pad_first=False, truncate_first=False):
         super(TextFeature, self).__init__()
-        self.tokenizer = tokenizer
         self.vocab = None
-        self.max_len = max_len
+        self.tokenizer = tokenizer if tokenizer else str.split()
         self.lower = lower
+        self.max_len = max_len
+        self.bos_token = bos_token
+        self.eos_token = bos_token
+        self.pad_token = pad_token
+        self.pad_first = pad_first
+        self.truncate_first = truncate_first
 
     def _tokenize(self, x) -> List[str]:
         if isinstance(x, tf.Tensor):
@@ -52,8 +57,25 @@ class TextFeature(Feature):
         counter.update(tokens)
 
     def __call__(self, x) -> np.array:
-        tokens = self._tokenize(x)
+        tokens = self._pad(x)
         return np.array(self.vocab(tokens), dtype='int32')
+
+    def _pad(self, x):
+        tokens = self._tokenize(x)
+        if self.max_len is None:
+            return tokens
+        max_len = self.max_len + (self.bos_token, self.eos_token).count(None) - 2
+        if self.pad_first:
+            padded = ([self.pad_token] * max(0, max_len - len(tokens))) \
+                + ([] if self.bos_token is None else [self.bos_token]) \
+                + (tokens[-max_len:] if self.truncate_first else tokens[:mx_len]) \
+                + ([] if self.eos_token is None else [self.eos_token])
+        else:
+            padded = ([] if self.bos_token is None else [self.bos_token]) \
+                + (tokens[-max_len:] if self.truncate_first else tokens[:max_len]) \
+                + ([] if self.eos_token is None else [self.eos_token]) \
+                + ([self.pad_token] * max(0, max_len - len(tokens)))
+        return tokens
 
     def padded_shape(self):
         return [self.max_len]

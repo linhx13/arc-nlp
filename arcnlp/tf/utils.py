@@ -64,6 +64,8 @@ def config_tf_v2_gpu(allow_soft_placement: bool = True,
                      gpu_allow_growth: bool = True):
     tf.config.set_soft_device_placement(allow_soft_placement)
     cuda_visible_devices = cuda_visible_devices or auto_select_gpu(top_n_gpus)
+    if not cuda_visible_devices:
+        return
     visible_device_ids = [int(x) for x in cuda_visible_devices.split(',')]
     gpus = tf.config.experimental.list_physical_devices('GPU')
     for i in visible_device_ids:

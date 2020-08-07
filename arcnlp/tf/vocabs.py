@@ -1,127 +1,182 @@
-# -*- coding: utf-8 -*-
+from typing import Optional, List, Dict, Union
+import json
+import collections
 
-from __future__ import unicode_literals
-from collections import defaultdict
-import logging
-
-logger = logging.getLogger(__name__)
+from .constants import UNK_TOKEN, PAD_TOKEN
+from .data.utils import DefaultLookupDict, count_tokens
 
 
-class Vocab(object):
-    """Defines a vocabulary object that will be used to numericalize a field.
+class Vocab:
+    """ Reference: gluonnlp vocab """
 
-    Attributes:
-        freqs: A collections.Counter object holding the frequencies of tokens
-            in the data used to build the Vocab.
-        stoi: A collections.defaultdict instance mapping token strings to
-            numerical identifiers.
-        itos: A list of token strings indexed by their numerical identifiers.
-    """
+    def __init__(self, counter, max_size=None, min_freq=1,
+                 unknown_token: Optional[str] = UNK_TOKEN,
+                 reserved_tokens: Optional[List[str]] = [PAD_TOKEN, UNK_TOKEN],
+                 token_to_idx: Optional[Dict[str, int]] = None):
+        assert min_freq > 0, '`min_freq` must be set to a positie value.'
 
-    # TODO (@mttk): Populate classs with default values of special symbols
-    UNK = '<unk>'
+        special_tokens = []
+        if reserved_tokens is not None:
+            special_tokens.extend(reserved_tokens)
+            special_tokens_set = set(special_tokens)
+            assert len(special_tokens_set) == len(special_tokens), \
+                "`reserved_tokens` cannot contain duplicate reserved tokens or " \
+                "other special tokens."
 
-    def __init__(self, counter, max_size=None, min_freq=1, specials=['<pad>'],
-                 vectors=None, vectors_cache=None, specials_first=True):
-        """Create a Vocab object from a collections.Counter.
+        self._unknown_index = None
+        if unknown_token is not None:
+            if unknown_token in special_tokens:
+                self._unknown_index = special_tokens.index(unknown_token)
+            else:
+                special_tokens.append(unknown_token)
+                self._unknown_index = len(special_tokens) - 1
+            self._token_to_idx = DefaultLookupDict(self._unknown_index)
+        else:
+            self._token_to_idx = {}
 
-        Arguments:
-            counter: collections.Counter object holding the frequencies of
-                each value found in the data.
-            max_size: The maximum size of the vocabulary, or None for no
-                maximum. Default: None.
-            min_freq: The minimum frequency needed to include a token in the
-                vocabulary. Values less than 1 will be set to 1. Default: 1.
-            specials: The list of special tokens (e.g., padding or eos) that
-                will be prepended to the vocabulary in addition to an <unk>
-                token. Default: ['<pad>']
-            vectors: One of either the available pretrained vectors
-                or custom pretrained vectors (see Vocab.load_vectors);
-                or a list of aforementioned vectors
-            vectors_cache: directory for cached vectors. Default: '.vector_cache'
-            specials_first: Whether to add special tokens into the vocabulary at first.
-                If it is False, they are added into the vocabulary at last.
-                Default: True.
-        """
-        self.freqs = counter
-        counter = counter.copy()
-        min_freq = max(min_freq, 1)
+        self._idx_to_token = []
 
-        self.itos = list()
-        self.unk_index = None
-        if specials_first:
-            self.itos = list(specials)
-            # only extend max size if specials are prepended
-            max_size = None if max_size is None else max_size + len(specials)
+        if not special_tokens:
+            self._reserved_tokens = None
+        else:
+            self._reserved_tokens = special_tokens
+            self._idx_to_token.extend(special_tokens)
 
-        # frequencies of special tokens are not counted when building vocabulary
-        # in frequency order
-        for tok in specials:
-            del counter[tok]
+        self._token_to_idx.update((token, idx) for idx, token in enumerate(self._idx_to_token))
 
-        # sort by frequency, then alphabetically
-        words_and_frequencies = sorted(counter.items(), key=lambda tup: tup[0])
-        words_and_frequencies.sort(key=lambda tup: tup[1], reverse=True)
+        if counter:
+            self._index_counter_keys(counter, unknown_token, special_tokens, max_size, min_freq)
 
-        for word, freq in words_and_frequencies:
-            if freq < min_freq or len(self.itos) == max_size:
+        if token_to_idx:
+            self._sort_index_according_to_user_specification(token_to_idx)
+            if unknown_token:
+                self._token_to_idx._default = self._token_to_idx[unknown_token]
+
+    def _index_counter_keys(self, counter, unk_token, special_tokens,
+                            max_size, min_freq):
+        unk_and_special_tokens = set(special_tokens) if special_tokens else set()
+        if unk_token:
+            unk_and_special_tokens.add(unk_token)
+
+        token_freqs = sorted(counter.items(), key=lambda x: x[0])
+        token_freqs.sort(key=lambda x: x[1], reverse=True)
+
+        token_cap = len(unk_and_special_tokens) + (
+            len(counter) if not max_size else max_size)
+
+        for token, freq in token_freqs:
+            if freq < min_freq or len(self._idx_to_token) >= token_cap:
                 break
-            self.itos.append(word)
+            if token not in unk_and_special_tokens:
+                self._idx_to_token.append(token)
+                self._token_to_idx[token] = len(self._idx_to_token) - 1
 
-        if Vocab.UNK in specials:  # hard-coded for now
-            unk_index = specials.index(Vocab.UNK)  # position in list
-            # account for ordering of specials, set variable
-            self.unk_index = unk_index if specials_first else len(
-                self.itos) + unk_index
-            self.stoi = defaultdict(self._default_unk_index)
+    def _sort_index_according_to_user_specification(self, token_to_idx):
+        # Sanity checks
+        if not set(token_to_idx.keys()).issubset(self.token_to_idx.keys()):
+            raise ValueError('User-specified token_to_idx mapping can only contain '
+                             'tokens that will be part of the vocabulary.')
+        if len(set(token_to_idx.values())) != len(token_to_idx):
+            raise ValueError('User-specified indices must not contain duplicates.')
+        if min(token_to_idx.values()) < 0 or max(token_to_idx.values()) >= len(self.token_to_idx):
+            raise ValueError('User-specified indices must not be < 0 or >= the number of tokens '
+                             'that will be in the vocabulary. The current vocab contains {}'
+                             'tokens.'.format(len(self.token_to_idx)))
+
+        # Update index ordering
+        for token, new_idx in token_to_idx.items():
+            old_idx = self.token_to_idx[token]
+            ousted_token = self.idx_to_token[new_idx]
+
+            self.token_to_idx[token] = new_idx
+            self.token_to_idx[ousted_token] = old_idx
+            self.idx_to_token[old_idx] = ousted_token
+            self.idx_to_token[new_idx] = token
+
+    @property
+    def idx_to_token(self):
+        return self._idx_to_token
+
+    @property
+    def reserved_tokens(self):
+        return self._reserved_tokens
+
+    @property
+    def token_to_idx(self):
+        return self._token_to_idx
+
+    @property
+    def unknown_token(self) -> str:
+        return self._unknown_token
+
+    def __contains__(self, token:str) -> bool:
+        return token in self._token_to_idx
+
+    def __getitem__(self, tokens) -> Union[str, List[str]]:
+        if not isinstance(tokens, (list, tuple)):
+            return self._token_to_idx[tokens]
         else:
-            self.stoi = defaultdict()
-
-        if not specials_first:
-            self.itos.extend(list(specials))
-
-        # stoi is simply a reverse dict for itos
-        self.stoi.update({tok: i for i, tok in enumerate(self.itos)})
-
-    def _default_unk_index(self):
-        return self.unk_index
-
-    def __getstate__(self):
-        # avoid picking defaultdict
-        attrs = dict(self.__dict__)
-        # cast to regular dict
-        attrs['stoi'] = dict(self.stoi)
-        return attrs
-
-    def __setstate__(self, state):
-        if state['unk_index'] is None:
-            stoi = defaultdict()
-        else:
-            stoi = defaultdict(self._default_unk_index)
-        stoi.update(state['stoi'])
-        state['stoi'] = stoi
-        self.__dict__.update(state)
-
-    def __eq__(self, other):
-        if self.freqs != other.freqs:
-            return False
-        if self.stoi != other.stoi:
-            return False
-        if self.itos != other.itos:
-            return False
-        if self.vectors != other.vectors:
-            return False
-        return True
+            return [self._token_to_idx[token] for token in tokens]
 
     def __len__(self):
-        return len(self.itos)
+        return len(self._idx_to_token)
 
-    def __getitem__(self, token: str) -> int:
-        return self.stoi[token]
+    def to_tokens(self, indices):
+        """Convert token indices to tokens according to the vocabulary."""
 
-    def extend(self, v, sort=False):
-        words = sorted(v.itos) if sort else v.itos
-        for w in words:
-            if w not in self.stoi:
-                self.itos.append(w)
-                self.stoi[w] = len(self.itos) - 1
+        to_reduce = False
+        if not isinstance(indices, (list, tuple)):
+            indices = [indices]
+            to_reduce = True
+
+        max_idx = len(self._idx_to_token) - 1
+
+        tokens = []
+        for idx in indices:
+            if not isinstance(idx, int) or idx > max_idx:
+                raise ValueError('Token index {} in the provided `indices` is invalid.'.format(idx))
+
+            tokens.append(self._idx_to_token[idx])
+
+        return tokens[0] if to_reduce else tokens
+
+    def to_indices(self, tokens):
+        return self[tokens]
+
+    def __call__(self, tokens):
+        return self[tokens]
+
+    def __repr__(self):
+        unk = '"{}"'.format(self._unknown_token) if self._unknown_token else 'None'
+        reserved = '"{}"'.format(self._reserved_tokens) if self._reserved_tokens else 'None'
+        return 'Vocab(size={}, unk={}, reserved={})'.format(len(self), unk, reserved)
+
+    def to_json(self):
+        vocab_dict = {}
+        vocab_dict['idx_to_token'] = self._idx_to_token
+        vocab_dict['token_to_idx'] = dict(self._token_to_idx)
+        vocab_dict['reserved_tokens'] = self._reserved_tokens
+        vocab_dict['unknown_token'] = self._unknown_token
+        return json.dumps(vocab_dict, ensure_ascii=False)
+
+    @classmethod
+    def from_json(cls, json_str):
+        vocab_dict = json.loads(json_str)
+        token_to_idx = vocab_dict.get('token_to_idx')
+        unknown_token = vocab_dict.get("unknown_token")
+        reserved_tokens = vocab_dict.get('reserved_tokens')
+
+        special_tokens = {unknown_token}
+        if reserved_tokens is not None:
+            reserved_tokens = [
+                t for t in reserved_tokens if t not in special_tokens
+            ]
+
+        vocab = cls(
+            counter=count_tokens(token_to_idx.keys()),
+            unknown_token=unknown_token,
+            reserved_tokens=reserved_tokens,
+            token_to_idx=token_to_idx
+        )
+
+        return vocab

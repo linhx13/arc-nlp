@@ -4,7 +4,7 @@ import tensorflow as tf
 
 from .dataset_builder import DatasetBuilder
 from ..utils import Counter
-from ...vocab import Vocab
+from ...vocabs import Vocab
 
 
 class TextMatchingData(DatasetBuilder):
@@ -42,7 +42,8 @@ class TextMatchingData(DatasetBuilder):
                 self.text_feature.count_vocab(ex['hypothesis'], text_counter)
                 self.label.count_vocab(ex['label'], label_counter)
         self.text_feature.vocab = Vocab(text_counter)
-        self.label.vocab = Vocab(label_counter, unknown_token=None)
+        self.label.vocab = Vocab(label_counter, unknown_token=None,
+                                 reserved_tokens=[])
 
     def element_length_func(self, example) -> int:
         return tf.shape(example['premise'])[0]

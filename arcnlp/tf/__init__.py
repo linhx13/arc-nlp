@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from . import data
-from . import vocab
+from . import vocabs
 from . import layers
 from . import models
 from . import utils
@@ -11,7 +11,7 @@ from . import predictors
 
 __all__ = [
     'data',
-    'vocab',
+    'vocabs',
     'layers',
     'models',
     'utils',
