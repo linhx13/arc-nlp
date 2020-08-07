@@ -5,9 +5,6 @@ from typing import Dict, Union
 import tensorflow as tf
 
 from .. import utils
-# from ...data import Field
-from ...layers.text_embedders import TextEmbedder
-
 from ...data import Feature
 
 
@@ -20,8 +17,6 @@ def BiLstmMatching(features: Dict[str, Feature],
                    dropout: float = 0.1,
                    label_field: str = 'label'):
     inputs = utils.create_inputs(features)
-    # input_premise = utils.get_text_inputs(inputs, 'premise')
-    # input_hypothesis = utils.get_text_inputs(inputs, 'hypothesis')
     input_premise = inputs['premise']
     input_hypothesis = inputs['hypothesis']
     embedded_premise = text_embedder(input_premise)

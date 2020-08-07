@@ -15,7 +15,6 @@ from .. import utils
 
 logger = logging.getLogger(__name__)
 
-TASK_CONFIG_FILE = "task_config.json"
 DATASET_BUILDER_FILE = "dataset_builder.pkl"
 MODEL_CONFIG_FILE = "model_config.json"
 MODEL_FILE = "model.h5"
@@ -69,8 +68,6 @@ class Trainer(object):
             val_data = None
         if val_data is not None:
             fit_kwargs['validation_data'] = val_data
-        print(val_dataset)
-        print(val_data)
 
         callbacks = self._get_callbacks(val_metric, patience, model_dir)
         fit_kwargs.update({
@@ -78,7 +75,6 @@ class Trainer(object):
             "callbacks": callbacks,
         })
 
-        print(train_data)
         history = self.model.fit(train_data, **fit_kwargs)
 
         if model_dir:
