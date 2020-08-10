@@ -7,7 +7,7 @@ import arcnlp.tf
 
 logger = logging.getLogger(__name__)
 
-tf.compat.v1.disable_eager_execution()
+# tf.compat.v1.disable_eager_execution()
 
 
 def build_model(model_type, data_handler, text_embedder):

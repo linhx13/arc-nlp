@@ -26,7 +26,6 @@ class DatasetBuilder:
     def build_dataset(self, path) -> tf.data.Dataset:
         examples = list(self.read_examples(path))
         examples = list(self.encode_example(ex) for ex in examples)
-        examples = examples[:1000]
 
         def _gen():
             for ex in examples:

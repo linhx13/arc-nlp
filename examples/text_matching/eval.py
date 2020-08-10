@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 def run_evaluate(model_dir, data_path):
     arcnlp.tf.utils.config_tf_gpu()
     trainer = arcnlp.tf.training.Trainer.from_path(model_dir)
-    dataset = trainer.data_handler.create_dataset_from_path(data_path)
+    dataset = trainer.dataset_builder.build_dataset(data_path)
     eval_res = trainer.evaluate(dataset)
     print(eval_res)
 
