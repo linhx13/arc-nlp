@@ -69,7 +69,7 @@ def run_train(args):
     train_path = os.path.expanduser(args.train_path)
     val_path = os.path.expanduser(args.val_path)
 
-    train_examples = list(dataset_builder.read_from_path(train_path))
+    train_examples = dataset_builder.read_examples(train_path)
     dataset_builder.build_vocab(train_examples)
 
     train_dataset = dataset_builder.build_dataset(train_path)
