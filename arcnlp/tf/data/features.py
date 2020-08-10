@@ -118,7 +118,7 @@ class Label(Feature):
     def padded_shape(self):
         return [len(self.vocab)]
 
-    def paddding_value(self):
+    def padding_value(self):
         return 0
 
     def output_type(self):
