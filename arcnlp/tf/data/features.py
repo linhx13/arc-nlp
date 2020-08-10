@@ -21,7 +21,7 @@ class Feature:
         raise NotImplementedError
 
     def padding_value(self):
-        return None
+        raise NotImplementedError
 
     def output_type(self):
         raise NotImplementedError
@@ -117,6 +117,9 @@ class Label(Feature):
 
     def padded_shape(self):
         return [len(self.vocab)]
+
+    def paddding_value(self):
+        return 0
 
     def output_type(self):
         return tf.int32
