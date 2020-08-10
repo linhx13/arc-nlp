@@ -6,14 +6,13 @@ from copy import deepcopy
 import tensorflow as tf
 
 from .. import utils
-from ...data import Field
-from ...layers.text_embedders import TextEmbedder
+from ...data import Feature
 from ...layers import BiMPMatching
 
 
-def BiMPM(features: Dict[str, Field],
-          targets: Dict[str, Field],
-          text_embedder: TextEmbedder,
+def BiMPM(features: Dict[str, Feature],
+          targets: Dict[str, Feature],
+          text_embedder,
           encoder_type: str = "gru",
           encoder_units: int = 100,
           encoder_kwargs: Dict = None,
@@ -39,7 +38,7 @@ def BiMPM(features: Dict[str, Field],
 
     inputs = utils.create_inputs(features)
 
-    input_premise = utils.get_text_inputs(inputs, 'premise')
+    input_premise = inputs['premise']
     embedded_premise = text_embedder(input_premise)
     if dropout:
         embedded_premise = tf.keras.layers.Dropout(dropout)(embedded_premise)
@@ -47,7 +46,7 @@ def BiMPM(features: Dict[str, Field],
     if dropout:
         encoded_premise = tf.keras.layers.Dropout(dropout)(encoded_premise)
 
-    input_hypothesis = utils.get_text_inputs(inputs, 'hypothesis')
+    input_hypothesis = inputs['hypothesis']
     embedded_hypothesis = text_embedder(input_hypothesis)
     if dropout:
         embedded_hypothesis = tf.keras.layers.Dropout(

@@ -5,13 +5,12 @@ from typing import Dict
 import tensorflow as tf
 
 from .. import utils
-from ...data import Field
-from ...layers.text_embedders import TextEmbedder
+from ...data import Feature
 
 
-def CDSSM(features: Dict[str, Field],
-          targets: Dict[str, Field],
-          text_embedder: TextEmbedder,
+def CDSSM(features: Dict[str, Feature],
+          targets: Dict[str, Feature],
+          text_embedder,
           conv_filters: int = 32,
           conv_kernel_size: int = 3,
           conv_activation='relu',
@@ -22,8 +21,8 @@ def CDSSM(features: Dict[str, Field],
           mlp_activation='relu',
           label_field: str = 'label'):
     inputs = utils.create_inputs(features)
-    input_premise = utils.get_text_inputs(inputs, 'premise')
-    input_hypothesis = utils.get_text_inputs(inputs, 'hypothesis')
+    input_premise = inputs['premise']
+    input_hypothesis = inputs['hypothesis']
     embedded_premise = text_embedder(input_premise)
     embedded_hypothesis = text_embedder(input_hypothesis)
     encoder = _build_encoder(conv_filters, conv_kernel_size,

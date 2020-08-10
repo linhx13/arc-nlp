@@ -1,20 +1,22 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import os
 
 import tensorflow as tf
 import arcnlp.tf
 
 logger = logging.getLogger(__name__)
 
-tf.compat.v1.disable_eager_execution()
+# tf.compat.v1.disable_eager_execution()
+arcnlp.tf.utils.config_tf_gpu()
 
 
 def build_model(model_type, data_handler, text_embedder):
     if model_type == 'bilstm':
-        model = arcnlp.tf.models.BiLstmMatcher(data_handler.features,
-                                               data_handler.targets,
-                                               text_embedder)
+        model = arcnlp.tf.models.BiLstmMatching(data_handler.features,
+                                                data_handler.targets,
+                                                text_embedder)
     elif model_type == 'esim':
         model = arcnlp.tf.models.ESIM(data_handler.features,
                                       data_handler.targets,
@@ -54,30 +56,36 @@ def build_model(model_type, data_handler, text_embedder):
     return model
 
 
+def tokenizer(text):
+    import jieba
+    return jieba.lcut(text)
+
+
 def run_train(args):
-    token_fields = {
-        'word': arcnlp.tf.data.Field(fix_length=args.fix_length)
-    }
-    data_handler = arcnlp.tf.data.TextMatchingDataHandler(token_fields)
+    dataset_builder = arcnlp.tf.data.TextMatchingData(
+        arcnlp.tf.data.TextFeature(tokenizer, max_len=args.max_len),
+        arcnlp.tf.data.Label())
 
-    train_dataset, test_dataset = arcnlp.tf.utils.create_train_test_datasets(
-        data_handler, args.train_path, args.test_path, args.test_size)
-    data_handler.build_vocab(train_dataset, test_dataset)
-    text_embedder = arcnlp.tf.layers.text_embedders.BasicTextEmbedder({
-        'word': tf.keras.layers.Embedding(len(token_fields['word'].vocab),
-                                          200, mask_zero=True)
-    })
+    train_path = os.path.expanduser(args.train_path)
+    val_path = os.path.expanduser(args.val_path)
 
-    model = build_model(args.model_type, data_handler, text_embedder)
+    train_examples = list(dataset_builder.read_from_path(train_path))
+    dataset_builder.build_vocab(train_examples)
 
-    arcnlp.tf.utils.config_tf_gpu()
-    trainer = arcnlp.tf.training.Trainer(model,
-                                         data_handler,
-                                         optimizer='adam',
-                                         loss='categorical_crossentropy',
-                                         metrics=['acc'])
+    train_dataset = dataset_builder.build_dataset(train_path)
+    val_dataset = dataset_builder.build_dataset(val_path)
+
+    text_embedder = tf.keras.layers.Embedding(
+        len(dataset_builder.text_feature.vocab), 200, mask_zero=True)
+
+    model = build_model(args.model_type, dataset_builder, text_embedder)
+
+    trainer = arcnlp.tf.training.Trainer(model, dataset_builder)
     trainer.train(train_dataset=train_dataset,
-                  validation_dataset=test_dataset,
+                  val_dataset=val_dataset,
+                  optimizer='adam',
+                  loss='categorical_crossentropy',
+                  metrics=['acc'],
                   batch_size=args.batch_size,
                   epochs=args.epochs,
                   model_dir=args.model_dir)
@@ -91,9 +99,8 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--train_path", required=True)
-    parser.add_argument("--test_path")
-    parser.add_argument("--test_size", type=float, default=0.1)
-    parser.add_argument("--fix_length", type=int)
+    parser.add_argument("--val_path", required=True)
+    parser.add_argument("--max_len", type=int)
     parser.add_argument("--model_dir")
     parser.add_argument("--model_type", required=True,
                         choices=['bilstm', 'esim', 'dssm', 'cdssm',

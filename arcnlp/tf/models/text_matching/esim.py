@@ -6,14 +6,13 @@ from copy import deepcopy
 import tensorflow as tf
 
 from .. import utils
-from ...data import Field
-from ...layers.text_embedders import TextEmbedder
+from ...data import Feature
 from ...layers import Attention, BOWEncoder
 
 
-def ESIM(features: Dict[str, Field],
-         targets: Dict[str, Field],
-         text_embedder: TextEmbedder,
+def ESIM(features: Dict[str, Feature],
+         targets: Dict[str, Feature],
+         text_embedder,
          lstm_units: int = 128,
          lstm_kwargs: Dict = None,
          hidden_units: int = 64,
@@ -26,8 +25,8 @@ def ESIM(features: Dict[str, Field],
     """
 
     inputs = utils.create_inputs(features)
-    input_premise = utils.get_text_inputs(inputs, 'premise')
-    input_hypothesis = utils.get_text_inputs(inputs, 'hypothesis')
+    input_premise = inputs['premise']
+    input_hypothesis = inputs['hypothesis']
     embedded_premise = text_embedder(input_premise)
     embedded_hypothesis = text_embedder(input_hypothesis)
 

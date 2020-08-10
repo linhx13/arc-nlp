@@ -5,10 +5,10 @@ from typing import Dict
 import tensorflow as tf
 
 # from ..data import Field
-from ..data import Transform
+from ..data import Feature
 
 
-def create_inputs(features: Dict[str, Transform]):
+def create_inputs(features: Dict[str, Feature]):
     inputs = {n: tf.keras.layers.Input(shape=(f.max_len,), name=n)
               for n, f in features.items()}
     return inputs

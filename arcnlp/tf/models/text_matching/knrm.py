@@ -5,20 +5,19 @@ from typing import Dict
 import tensorflow as tf
 
 from .. import utils
-from ...data import Field
-from ...layers.text_embedders import TextEmbedder
+from ...data import Feature
 
 
-def KNRM(features: Dict[str, Field],
-         targets: Dict[str, Field],
-         text_embedder: TextEmbedder,
+def KNRM(features: Dict[str, Feature],
+         targets: Dict[str, Feature],
+         text_embedder,
          kernel_num: int = 11,
          sigma: float = 0.1,
          exact_sigma: float = 0.001,
          label_field: str = 'label'):
     inputs = utils.create_inputs(features)
-    input_premise = utils.get_text_inputs(inputs, 'premise')
-    input_hypothesis = utils.get_text_inputs(inputs, 'hypothesis')
+    input_premise = inputs['premise']
+    input_hypothesis = inputs['hypothesis']
     embedded_premise = text_embedder(input_premise)
     embedded_hypothesis = text_embedder(input_hypothesis)
 

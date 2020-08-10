@@ -9,13 +9,13 @@ from typing import Tuple
 import tensorflow as tf
 import numpy as np
 
-from ..data import DataHandler, Dataset
+# from ..data import DataHandler, Dataset
+from ..data import DatasetBuilder
 from .. import utils
 
 logger = logging.getLogger(__name__)
 
-TASK_CONFIG_FILE = "task_config.json"
-DATA_HANDLER_FILE = "data_handler.pkl"
+DATASET_BUILDER_FILE = "dataset_builder.pkl"
 MODEL_CONFIG_FILE = "model_config.json"
 MODEL_FILE = "model.h5"
 CHECKPOINT_MODEL_FILE = "model.epoch_{epoch:d}.h5"
@@ -26,78 +26,74 @@ class Trainer(object):
 
     def __init__(self,
                  model: tf.keras.models.Model,
-                 data_handler: DataHandler,
-                 optimizer='adam',
-                 loss="categorical_crossentropy",
-                 metrics=["acc"]):
+                 dataset_builder: DatasetBuilder):
         self.model = model
-        self.data_handler = data_handler
-        self.optimizer = optimizer
-        self.loss = loss
-        self.metrics = metrics
+        self.dataset_builder = dataset_builder
 
     @classmethod
     def from_path(cls, path: str, epoch: int = None):
-        model, data_handler = load_model_data(path, epoch)
-        return cls(model, data_handler)
+        model, dataset_builder = load_model_data(path, epoch)
+        return cls(model, dataset_builder)
 
     def train(self,
-              train_dataset: Dataset,
-              validation_dataset: Dataset = None,
-              validation_metric="val_acc",
+              train_dataset: tf.data.Dataset,
+              metrics=['acc'],
+              val_dataset: tf.data.Dataset = None,
+              val_metric="val_acc",
+              optimizer="adam",
+              loss="categorical_crossentropy",
               batch_size: int = 32,
               epochs: int = 20,
               patience: int = 3,
               model_dir: str = None,
               **fit_kwargs):
-        self.model.compile(
-            optimizer=self.optimizer, loss=self.loss, metrics=self.metrics)
+        self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
         self.model.summary()
 
         if model_dir:
             utils.mkdir_p(model_dir)
 
         if model_dir:
-            with open(os.path.join(model_dir, DATA_HANDLER_FILE), 'wb') as fp:
-                pickle.dump(self.data_handler, fp)
+            with open(os.path.join(model_dir, DATASET_BUILDER_FILE), 'wb') as fp:
+                pickle.dump(self.dataset_builder, fp)
             with open(os.path.join(model_dir, MODEL_CONFIG_FILE), 'w') as fp:
                 fp.write(self.model.to_json())
 
-        training_data = self.data_handler.get_data_sequence(
+        train_data = self.dataset_builder.get_bucket_batches(
             train_dataset, batch_size, train=True)
-        if validation_dataset:
-            validation_data = self.data_handler.get_data_sequence(
-                validation_dataset, batch_size, train=False)
-        else:
-            validation_data = None
 
-        callbacks = self._get_callbacks(validation_metric, patience,
-                                        model_dir)
+        if val_dataset:
+            val_data = self.dataset_builder.get_bucket_batches(
+                val_dataset, batch_size, train=False)
+            fit_kwargs['validation_data'] = val_data
+        else:
+            val_data = None
+
+        callbacks = self._get_callbacks(val_metric, patience, model_dir)
         fit_kwargs.update({
             "epochs": epochs,
-            "callbacks": callbacks
+            "callbacks": callbacks,
         })
-        if validation_dataset is not None:
-            fit_kwargs['validation_data'] = validation_data
-        # fit_kwargs['use_multiprocessing'] = True
-        history = self.model.fit(training_data, **fit_kwargs)
+
+        history = self.model.fit(train_data, **fit_kwargs)
 
         if model_dir:
-            best_epoch = int(np.argmax(history.history[validation_metric]))
+            best_epoch = int(np.argmax(history.history[val_metric]))
             self._save_best_model(best_epoch, model_dir)
 
         return history
 
     def evaluate(self,
-                 dataset: Dataset,
+                 dataset: tf.data.Dataset,
                  batch_size: int = 32):
-        data = self.data_handler.get_data_sequence(dataset, batch_size, False)
+        data, steps = self.dataset_builder.get_bucket_batches(
+            dataset, batch_size, False)
         score = self.model.evaluate(data)
         return dict(zip(self.model.metrics_names, score))
 
-    def _get_callbacks(self, validation_metric, patience, model_dir):
-        early_stop = tf.keras.callbacks.EarlyStopping(
-            monitor=validation_metric, patience=patience)
+    def _get_callbacks(self, val_metric, patience, model_dir):
+        early_stop = tf.keras.callbacks.EarlyStopping(monitor=val_metric,
+                                                      patience=patience)
         # TODO: add model_callbacks
         callbacks = [early_stop]
         if model_dir:
@@ -107,7 +103,7 @@ class Trainer(object):
                 checkpoint_path,
                 save_best_only=True,
                 save_weights_only=False,
-                monitor=validation_metric)
+                monitor=val_metric)
             callbacks.append(model_checkpoint)
         return callbacks
 
@@ -120,10 +116,10 @@ class Trainer(object):
 
 
 def load_model_data(model_dir, epoch: int = None) \
-        -> Tuple[tf.keras.models.Model, DataHandler]:
+        -> Tuple[tf.keras.models.Model, DatasetBuilder]:
     logger.info("Loading data handler ...")
-    with open(os.path.join(model_dir, DATA_HANDLER_FILE), 'rb') as fp:
-        data_handler = pickle.load(fp)
+    with open(os.path.join(model_dir, DATASET_BUILDER_FILE), 'rb') as fp:
+        dataset_builder = pickle.load(fp)
     logger.info("Loading model ...")
     custom_objects = utils.get_custom_objects()
     if epoch is not None:
@@ -133,4 +129,4 @@ def load_model_data(model_dir, epoch: int = None) \
     model_file = os.path.join(model_dir, model_file)
     model = tf.keras.models.load_model(model_file, custom_objects)
     logger.info("Loading model from %s done" % model_file)
-    return model, data_handler
+    return model, dataset_builder
