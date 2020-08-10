@@ -14,11 +14,14 @@ class Feature:
     def count_vocab(self, x, counter) -> None:
         pass
 
-    def __call__(self, x):
+    def encode(self, x):
         raise NotImplementedError
 
     def padded_shape(self):
         raise NotImplementedError
+
+    def padding_value(self):
+        return None
 
     def output_type(self):
         raise NotImplementedError
@@ -40,6 +43,14 @@ class TextFeature(Feature):
         self.pad_first = pad_first
         self.truncate_first = truncate_first
 
+    def count_vocab(self, x, counter) -> None:
+        tokens = self._tokenize(x)
+        counter.update(tokens)
+
+    def encode(self, x) -> np.array:
+        tokens = self._pad(x)
+        return np.array(self.vocab(tokens), dtype='int32')
+
     def _tokenize(self, x) -> List[str]:
         if isinstance(x, tf.Tensor):
             x = x.numpy()
@@ -51,14 +62,6 @@ class TextFeature(Feature):
         if self.lower:
             x = [t.lower() for t in x]
         return x
-
-    def count_vocab(self, x, counter) -> None:
-        tokens = self._tokenize(x)
-        counter.update(tokens)
-
-    def __call__(self, x) -> np.array:
-        tokens = self._pad(x)
-        return np.array(self.vocab(tokens), dtype='int32')
 
     def _pad(self, x):
         tokens = self._tokenize(x)
@@ -80,6 +83,9 @@ class TextFeature(Feature):
     def padded_shape(self):
         return [self.max_len]
 
+    def padding_value(self):
+        return self.vocab[self.pad_token]
+
     def output_type(self):
         return tf.int32
 
@@ -91,23 +97,23 @@ class Label(Feature):
         self.vocab = None
         self.sparse_target = sparse_target
 
+    def count_vocab(self, x, counter) -> None:
+        token = self._as_text(x)
+        counter[token] += 1
+
+    def encode(self, x) -> np.array:
+        idx = self.vocab(self._as_text(x))
+        if self.sparse_target:
+            return np.expand_dims(idx, axis=-1)
+        else:
+            return np.eye(len(self.vocab), dtype='int32')[idx]
+
     def _as_text(self, x):
         if isinstance(x, tf.Tensor):
             x = x.numpy()
         if isinstance(x, (str, bytes)):
             x = tf.compat.as_text(x)
         return x
-
-    def count_vocab(self, x, counter) -> None:
-        token = self._as_text(x)
-        counter[token] += 1
-
-    def __call__(self, x) -> np.array:
-        idx = self.vocab(self._as_text(x))
-        if self.sparse_target:
-            return np.expand_dims(idx, axis=-1)
-        else:
-            return np.eye(len(self.vocab), dtype='int32')[idx]
 
     def padded_shape(self):
         return [len(self.vocab)]

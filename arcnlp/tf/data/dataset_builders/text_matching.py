@@ -15,7 +15,7 @@ class TextMatchingData(DatasetBuilder):
             {'premise': text_feature, 'hypothesis': text_feature},
             {'label': label})
 
-    def read_from_path(self, path) -> Iterable[Dict]:
+    def read_examples(self, path) -> Iterable[Dict]:
         with open(path) as fin:
             for line in fin:
                 line = line.strip("\r\n")
@@ -26,18 +26,18 @@ class TextMatchingData(DatasetBuilder):
                        'hypothesis': arr[1].split(),
                        'label': arr[2]}
 
-    def transform_example(self, data: Dict) -> Dict:
+    def encode_example(self, data: Dict) -> Dict:
         example = {}
-        example['premise'] = self.text_feature(data['premise'])
-        example['hypothesis'] = self.text_feature(data['hypothesis'])
+        example['premise'] = self.text_feature.encode(data['premise'])
+        example['hypothesis'] = self.text_feature.encode(data['hypothesis'])
         if data.get('label') is not None:
-            example['label'] = self.label(data['label'])
+            example['label'] = self.label.encode(data['label'])
         return example
 
-    def build_vocab(self, *examples):
+    def build_vocab(self, *args, **kwargs):
         text_counter, label_counter = Counter(), Counter()
-        for raw_examples in examples:
-            for ex in (raw_examples):
+        for examples in args:
+            for ex in examples:
                 self.text_feature.count_vocab(ex['premise'], text_counter)
                 self.text_feature.count_vocab(ex['hypothesis'], text_counter)
                 self.label.count_vocab(ex['label'], label_counter)

@@ -3,7 +3,6 @@ import os
 import tensorflow as tf
 import arcnlp.tf
 
-# tf.compat.v1.disable_eager_execution()
 arcnlp.tf.utils.config_tf_gpu()
 
 
@@ -20,7 +19,8 @@ def tokenizer(text):
 builder = arcnlp.tf.data.TextMatchingData(
     arcnlp.tf.data.TextFeature(tokenizer),
     arcnlp.tf.data.Label())
-train_examples = list(builder.read_from_path(train_path))
+
+train_examples = builder.read_examples(train_path)
 builder.build_vocab(train_examples)
 print(len(builder.text_feature.vocab))
 print(len(builder.label.vocab))

@@ -61,13 +61,13 @@ class Trainer(object):
 
         train_data = self.dataset_builder.get_bucket_batches(
             train_dataset, batch_size, train=True)
+
         if val_dataset:
             val_data = self.dataset_builder.get_bucket_batches(
                 val_dataset, batch_size, train=False)
+            fit_kwargs['validation_data'] = val_data
         else:
             val_data = None
-        if val_data is not None:
-            fit_kwargs['validation_data'] = val_data
 
         callbacks = self._get_callbacks(val_metric, patience, model_dir)
         fit_kwargs.update({
@@ -86,7 +86,7 @@ class Trainer(object):
     def evaluate(self,
                  dataset: tf.data.Dataset,
                  batch_size: int = 32):
-        data = self.dataset_builder.get_bucket_batches(
+        data, steps = self.dataset_builder.get_bucket_batches(
             dataset, batch_size, False)
         score = self.model.evaluate(data)
         return dict(zip(self.model.metrics_names, score))
