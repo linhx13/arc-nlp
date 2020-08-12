@@ -1,190 +1,125 @@
-# -*- coding: utf-8 -*-
-
-import six
-from collections import Counter, OrderedDict
-from itertools import chain
+from typing import Union, List, Dict
 
 import numpy as np
+import tensorflow as tf
 
-from ..vocabs import Vocab
-from .dataset import Dataset
-from . import utils
+from ..constants import PAD_TOKEN
 
 
-class Field():
-    """Defines a datatype together with instructions for converting to Tensor.
+class Field:
 
-    Field class models common text processing datatypes that can be represented
-    by tensors.  It holds a Vocab object that defines the set of possible values
-    for elements of the field and their corresponding numerical representations.
-    The Field object also holds other parameters relating to how a datatype
-    should be numericalized, such as a tokenization method and the kind of
-    Tensor that should be produced.
+    def __init__(self):
+        pass
 
-    If a Field is shared between two columns in a dataset (e.g., question and
-    answer in a QA dataset), then they will have a shared vocabulary.
-    """
+    def count_vocab(self, x, counter) -> None:
+        pass
 
-    vocab_cls = Vocab
+    def encode(self, x):
+        raise NotImplementedError
 
-    def __init__(self, sequential=True, use_vocab=True, init_token=None,
-                 eos_token=None, fix_length=None, dtype='int32',
-                 preprocessing=None, postprocessing=None, lower=False,
-                 tokenize=None, include_lengths=False, unk_token='<unk>',
-                 pad_token='<pad>', pad_first=False, truncate_first=False,
-                 is_target=False, namespace='tokens'):
-        self.sequential = sequential
-        self.use_vocab = use_vocab
-        self.init_token = init_token
-        self.eos_token = eos_token
-        self.unk_token = unk_token
-        self.fix_length = fix_length
-        self.dtype = dtype
-        self.preprocessing = preprocessing
-        self.postprocessing = postprocessing
+    def padded_shape(self):
+        raise NotImplementedError
+
+    def padding_value(self):
+        raise NotImplementedError
+
+    def output_type(self):
+        raise NotImplementedError
+
+
+class TextField(Field):
+
+    def __init__(self, tokenizer=None, lower=False, max_len=None,
+                 bos_token=None, eos_token=None, pad_token=PAD_TOKEN,
+                 pad_first=False, truncate_first=False):
+        super(TextField, self).__init__()
+        self.vocab = None
+        self.tokenizer = tokenizer if tokenizer else str.split()
         self.lower = lower
-        self.tokenize = tokenize if tokenize else utils.split_tokenizer
-        self.include_lengths = include_lengths
-        self.pad_token = pad_token if self.sequential else None
+        self.max_len = max_len
+        self.bos_token = bos_token
+        self.eos_token = bos_token
+        self.pad_token = pad_token
         self.pad_first = pad_first
         self.truncate_first = truncate_first
-        self.is_target = is_target
-        self.namespace = namespace
 
-    def __hash__(self):
-        return 42
+    def count_vocab(self, x, counter) -> None:
+        tokens = self._tokenize(x)
+        counter.update(tokens)
 
-    def __eq__(self, other):
-        if not isinstance(other, Field):
-            return False
-        return self.__dict__ == other.__dict__
+    def encode(self, x) -> np.array:
+        tokens = self._pad(x)
+        return np.array(self.vocab(tokens), dtype='int32')
 
-    def preprocess(self, x):
-        if (six.PY2 and isinstance(x, six.string_types)
-                and not isinstance(x, six.text_type)):
-            if isinstance(x, list):
-                x = [six.text_type(s, encoding='utf-8') for s in x]
-            else:
-                x = six.text_type(x, encoding='utf-8')
-        if self.sequential and isinstance(x, six.text_type):
-            x = self.tokenize(x.rstrip('\n'))
+    def _tokenize(self, x) -> List[str]:
+        if isinstance(x, tf.Tensor):
+            x = x.numpy()
+        if isinstance(x, list):
+            x = [tf.compat.as_text(t) for t in x]
+        else:
+            x = tf.compat.as_text(x)
+            x = self.tokenizer(x)
         if self.lower:
-            if isinstance(x, list):
-                x = [s.lower() for s in x]
-            else:
-                x = x.lower()
-        if self.preprocessing is not None:
-            return self.preprocessing(x)
+            x = [t.lower() for t in x]
+        return x
+
+    def _pad(self, x):
+        tokens = self._tokenize(x)
+        if self.max_len is None:
+            return tokens
+        max_len = self.max_len + (self.bos_token, self.eos_token).count(None) - 2
+        if self.pad_first:
+            padded = ([self.pad_token] * max(0, max_len - len(tokens))) \
+                + ([] if self.bos_token is None else [self.bos_token]) \
+                + (tokens[-max_len:] if self.truncate_first else tokens[:mx_len]) \
+                + ([] if self.eos_token is None else [self.eos_token])
         else:
-            return x
+            padded = ([] if self.bos_token is None else [self.bos_token]) \
+                + (tokens[-max_len:] if self.truncate_first else tokens[:max_len]) \
+                + ([] if self.eos_token is None else [self.eos_token]) \
+                + ([self.pad_token] * max(0, max_len - len(tokens)))
+        return tokens
 
-    def process(self, batch):
-        """Process a list of examples to create a np.ndarray."""
-        padded = self.pad(batch)
-        tensor = self.numericalize(padded)
-        return tensor
+    def padded_shape(self):
+        return [self.max_len]
 
-    def pad(self, minibatch):
-        """Pad a batch of examples using this field."""
-        minibatch = list(minibatch)
-        if not self.sequential:
-            return minibatch
-        if self.fix_length is None:
-            max_len = max(len(x) for x in minibatch)
-        else:
-            max_len = self.fix_length + \
-                (self.init_token, self.eos_token).count(None) - 2
-        padded, lengths = [], []
-        for x in minibatch:
-            if self.pad_first:
-                padded.append(
-                    [self.pad_token] * max(0, max_len - len(x))
-                    + ([] if self.init_token is None else [self.init_token])
-                    + list(x[-max_len:] if self.truncate_first else x[:max_len])
-                    + ([] if self.eos_token is None else [self.eos_token]))
-            else:
-                padded.append(
-                    ([] if self.init_token is None else [self.init_token])
-                    + list(x[-max_len:] if self.truncate_first else x[:max_len])
-                    + ([] if self.eos_token is None else [self.eos_token])
-                    + [self.pad_token] * max(0, max_len - len(x)))
-            lengths.append(len(padded[-1]) - max(0, max_len - len(x)))
-        if self.include_lengths:
-            return (padded, lengths)
-        return padded
+    def padding_value(self):
+        return self.vocab[self.pad_token]
 
-    def numericalize(self, arr):
-        """Turn a batch of examples that use this field into np.ndarray.
-        If the field has include_lengths=True, a tensor of lengths will be
-        included in the return value.
-        """
-        if self.include_lengths and not isinstance(arr, tuple):
-            raise ValueError("Field has include_lengths seet to True, but"
-                             "input data is not a tuple of "
-                             "(data_batch, batch_lengths).")
-        if isinstance(arr, tuple):
-            arr, lengths = arr
-            lengths = np.array(lengths, dtype=self.dtype)
-
-        if self.use_vocab:
-            if self.sequential:
-                arr = [[self.vocab.stoi[x] for x in ex] for ex in arr]
-            else:
-                arr = [self.vocab.stoi[x] for x in arr]
-
-            if self.postprocessing is not None:
-                arr = self.postprocessing(arr, self.vocab)
-        else:
-            if not self.sequential:
-                numericalization_func = getattr(np, self.dtype)
-                arr = [numericalization_func(x) if isinstance(x, six.string_types)
-                       else x for x in arr]
-            if self.postprocessing is not None:
-                arr = self.postprocessing(arr, None)
-
-        var = np.array(arr, dtype=self.dtype)
-
-        if self.include_lengths:
-            return var, lengths
-        return var
-
-    def build_vocab(self, *args, **kwargs):
-        """Construct the Vocab object for this field from one or more datasets.
-        """
-        counter = Counter()
-        sources = []
-        for arg in args:
-            if isinstance(arg, Dataset):
-                sources += [getattr(arg, name) for name, field in
-                            arg.fields.items() if field is self]
-            else:
-                sources.append(arg)
-        for data in sources:
-            for x in data:
-                if not self.sequential:
-                    x = [x]
-                try:
-                    counter.update(x)
-                except TypeError:
-                    counter.update(chain.from_iterable(x))
-        specials = list(OrderedDict.fromkeys(
-            tok for tok in [self.pad_token, self.unk_token, self.init_token,
-                            self.eos_token] + kwargs.pop('specials', [])
-            if tok is not None))
-        self.vocab = self.vocab_cls(counter, specials=specials, **kwargs)
+    def output_type(self):
+        return tf.int32
 
 
 class LabelField(Field):
-    """A Label field.
 
-     A label field is a shallow wrapper around a standard field designed to hold labels
-    for a classification task. Its only use is to set the unk_token and sequential to
-    `None` by default.
-    """
+    def __init__(self, sparse_target: bool=False):
+        super(LabelField, self).__init__()
+        self.vocab = None
+        self.sparse_target = sparse_target
 
-    def __init__(self, namespace="labels", **kwargs):
-        kwargs['sequential'] = False
-        kwargs['unk_token'] = None
-        kwargs['is_target'] = True
-        super(LabelField, self).__init__(**kwargs)
-        self.namespace = namespace
+    def count_vocab(self, x, counter) -> None:
+        token = self._as_text(x)
+        counter[token] += 1
+
+    def encode(self, x) -> np.array:
+        idx = self.vocab(self._as_text(x))
+        if self.sparse_target:
+            return np.expand_dims(idx, axis=-1)
+        else:
+            return np.eye(len(self.vocab), dtype='int32')[idx]
+
+    def _as_text(self, x):
+        if isinstance(x, tf.Tensor):
+            x = x.numpy()
+        if isinstance(x, (str, bytes)):
+            x = tf.compat.as_text(x)
+        return x
+
+    def padded_shape(self):
+        return [len(self.vocab)]
+
+    def padding_value(self):
+        return 0
+
+    def output_type(self):
+        return tf.int32

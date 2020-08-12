@@ -5,11 +5,11 @@ from typing import Dict, Union
 import tensorflow as tf
 
 from .. import utils
-from ...data import Feature
+from ...data import Field
 
 
-def BiLstmMatching(features: Dict[str, Feature],
-                   targets: Dict[str, Feature],
+def BiLstmMatching(features: Dict[str, Field],
+                   targets: Dict[str, Field],
                    text_embedder,
                    lstm_units: int = 128,
                    lstm_kwargs: Dict = None,

@@ -1,85 +1,106 @@
-# -*- coding: utf-8 -*-
-
-from typing import Iterable, Any, Dict, Union
+from typing import Iterable, Dict, Union
 from itertools import chain
-from collections import defaultdict
 
-from .. import Field, Example, Dataset
-from ..data_sequence import DataSequence
+import tensorflow as tf
+
+from ..fields import Field
 
 
-class DataHandler(object):
+class DataHandler:
 
     def __init__(self,
-                 feature_fields: Dict[str, Union[Field, Dict[str, Field]]],
-                 target_fields: Dict[str, Field],
-                 sort_feature: str = None):
-        self.features: Dict[str, Field] = self._create_fields(feature_fields)
-        self.targets: Dict[str, Field] = self._create_fields(target_fields)
-        self.example_fields = self._create_example_fields(feature_fields,
-                                                          target_fields)
-        self.sort_feature = sort_feature or list(self.features.keys())[0]
-        self.vocabs = {}  # namespace -> vocab
+                 features: Dict[str, Field],
+                 targets: Dict[str, Field]):
+        self.features = features
+        self.targets = targets
 
-    def create_dataset_from_path(self, path: str) -> Dataset:
-        examples = list(self.read_from_path(path))
-        return Dataset(examples, self.fields)
-
-    def read_from_path(self, path: str) -> Iterable[Example]:
+    def read_examples(self, path) -> Iterable[Dict]:
         raise NotImplementedError
 
-    def build_example(self, *inputs) -> Example:
+    def build_vocab(self, *args, **kwargs):
         raise NotImplementedError
 
-    def build_vocab(self, *datasets, **kwargs):
-        datasets = [d for d in datasets if d is not None]
-        specials = kwargs.pop('specials', {})
-        ns_fs = defaultdict(list)
-        for f in chain(self.features.values(), self.targets.values()):
-            if not f.use_vocab:
-                continue
-            if not f.namespace:
-                raise ValueError(
-                    "Field namespace cannot be null when use_vocab")
-            ns_fs[f.namespace].append(f)
-        for ns, fs in ns_fs.items():
-            f0_specials = [fs[0].pad_token, fs[0].unk_token,
-                           fs[0].init_token, fs[0].eos_token]
-            f0_specials = [x for f in fs[1:] for x in [f.pad_token, f.unk_token,
-                                                       f.init_token, f.eos_token]
-                           if x not in f0_specials]
-            f0_specials.extend([x for x in specials.get(ns, [])
-                                if x not in f0_specials])
-            fs[0].build_vocab(*datasets, specials=f0_specials)
-            for f in fs[1:]:
-                f.vocab = fs[0].vocab
-            self.vocabs[ns] = fs[0].vocab
+    def encode_example(self, example: Dict) -> Dict:
+        raise NotImplementedError
 
-    def sort_key(self, example: Example) -> Any:
-        return len(getattr(example, self.sort_feature))
+    def build_dataset(self, data_source: Union[str, Iterable[Dict]]) -> tf.data.Dataset:
+        if isinstance(data_source, str):
+            examples = self.read_examples(data_source)
+        else:
+            examples = data_source
+        examples = list(self.encode_example(ex) for ex in examples)
 
-    @property
-    def fields(self):
-        return {**self.features, **self.targets}
+        def _gen():
+            for ex in examples:
+                yield ex
 
-    def _create_fields(self, fields):
-        res = {}
-        for key, val in fields.items():
-            if isinstance(val, dict):
-                for n, f in val.items():
-                    res['%s.%s' % (key, n)] = f
-            else:
-                res[key] = val
-        return res
+        return tf.data.Dataset.from_generator(
+            _gen, output_types=self._output_types())
 
-    def _create_example_fields(self, feature_fields, target_fields):
-        res = {}
-        for key, val in chain(feature_fields.items(), target_fields.items()):
-            if isinstance(val, dict):
-                res[key] = [('%s.%s' % (key, n), f) for n, f in val.items()]
-            else:
-                res[key] = (key, val)
-        return res
+    def get_data_iter(self, dataset: tf.data.Dataset,
+                      batch_size=32, train=True) -> tf.data.Dataset:
+        padded_shapes = self._padded_shapes()
+        padding_values = self._padding_values()
+        if train:
+            dataset = dataset.shuffle(batch_size * 100)
+        dataset = dataset.padded_batch(batch_size,
+                                       padded_shapes=padded_shapes,
+                                       padding_values=padding_values)
+        dataset = dataset.map(self._collate_fn,
+                              num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
+        return dataset
 
-    def get_data_sequence(self, dataset, batch_size, train=True):
-        return DataSequence(dataset, self, batch_size, train)
+    def get_bucket_iter(self, dataset: tf.data.Dataset,
+                        batch_size=32, train=True) -> tf.data.Dataset:
+        padded_shapes = self._padded_shapes()
+        padding_values = self._padding_values()
+        if train:
+            bucket_boundaries = self._bucket_boundaries(batch_size)
+            bucket_batch_sizes = [batch_size] * (len(bucket_boundaries) + 1)
+            dataset = dataset.apply(tf.data.experimental.bucket_by_sequence_length(
+                self.element_length_func, bucket_boundaries, bucket_batch_sizes,
+                padded_shapes=padded_shapes, padding_values=padding_values))
+            dataset = dataset.shuffle(100)
+        else:
+            dataset = dataset.padded_batch(
+                batch_size, padded_shapes=padded_shapes)
+
+        dataset = dataset.map(self._collate_fn,
+                              num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
+        return dataset
+
+    def element_length_func(self, example) -> int:
+        raise NotImplementedError
+
+    def _bucket_boundaries(self, max_length, min_length=8, length_bucket_step=1.1):
+        boundaries = []
+        x = min_length
+        while x < max_length:
+            boundaries.append(x)
+            x = max(x + 1, int(x * length_bucket_step))
+        return boundaries
+
+    def _padded_shapes(self):
+        padded_shapes = {}
+        for name, field in chain(self.features.items(), self.targets.items()):
+            padded_shapes[name] = field.padded_shape()
+        return padded_shapes
+
+    def _padding_values(self):
+        padding_values = {}
+        for name, field in chain(self.features.items(), self.targets.items()):
+            padding_values[name] = field.padding_value()
+        return padding_values
+
+    def _output_types(self):
+        output_types = {}
+        for name, field in chain(self.features.items(), self.targets.items()):
+            output_types[name] = field.output_type()
+        return output_types
+
+    def _collate_fn(self, batch):
+        features = {name: batch[name] for name in self.features.keys()}
+        targets = {name: batch[name] for name in self.targets.keys()}
+        return features, targets

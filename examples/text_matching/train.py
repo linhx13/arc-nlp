@@ -56,15 +56,11 @@ def build_model(model_type, data_handler, text_embedder):
     return model
 
 
-def tokenizer(text):
-    import jieba
-    return jieba.lcut(text)
-
-
 def run_train(args):
-    dataset_builder = arcnlp.tf.data.TextMatchingData(
-        arcnlp.tf.data.TextFeature(tokenizer, max_len=args.max_len),
-        arcnlp.tf.data.Label())
+    dataset_builder = arcnlp.tf.data.TextMatchingDataHandler(
+        arcnlp.tf.data.TextField(tokenizer=arcnlp.tf.data.jieba_tokenizer,
+                                 max_len=args.max_len),
+        arcnlp.tf.data.LabelField())
 
     train_path = os.path.expanduser(args.train_path)
     val_path = os.path.expanduser(args.val_path)
@@ -76,7 +72,7 @@ def run_train(args):
     val_dataset = dataset_builder.build_dataset(val_path)
 
     text_embedder = tf.keras.layers.Embedding(
-        len(dataset_builder.text_feature.vocab), 200, mask_zero=True)
+        len(dataset_builder.text_field.vocab), 200, mask_zero=True)
 
     model = build_model(args.model_type, dataset_builder, text_embedder)
 

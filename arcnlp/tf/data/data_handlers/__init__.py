@@ -2,6 +2,7 @@
 
 from .data_handler import DataHandler
 from .imdb import IMDBDataHandler
+from .text_matching import TextMatchingDataHandler
 from .sequence_tagging import SequenceTaggingDataHandler
 from .conll2000 import Conll2000DataHandler
 from .conll2003 import Conll2003DataHandler

@@ -5,11 +5,11 @@ from typing import Dict
 import tensorflow as tf
 
 from .. import utils
-from ...data import Feature
+from ...data import Field
 
 
-def KNRM(features: Dict[str, Feature],
-         targets: Dict[str, Feature],
+def KNRM(features: Dict[str, Field],
+         targets: Dict[str, Field],
          text_embedder,
          kernel_num: int = 11,
          sigma: float = 0.1,

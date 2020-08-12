@@ -5,11 +5,11 @@ from typing import Dict
 import tensorflow as tf
 
 from .. import utils
-from ...data import Feature
+from ...data import Field
 
 
-def MVLSTM(features: Dict[str, Feature],
-           targets: Dict[str, Feature],
+def MVLSTM(features: Dict[str, Field],
+           targets: Dict[str, Field],
            text_embedder,
            lstm_units: int = 50,
            top_k: int = 10,

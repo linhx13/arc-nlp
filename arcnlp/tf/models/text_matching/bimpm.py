@@ -6,12 +6,12 @@ from copy import deepcopy
 import tensorflow as tf
 
 from .. import utils
-from ...data import Feature
+from ...data import Field
 from ...layers import BiMPMatching
 
 
-def BiMPM(features: Dict[str, Feature],
-          targets: Dict[str, Feature],
+def BiMPM(features: Dict[str, Field],
+          targets: Dict[str, Field],
           text_embedder,
           encoder_type: str = "gru",
           encoder_units: int = 100,

@@ -5,11 +5,11 @@ from typing import Dict
 import tensorflow as tf
 
 from .. import utils
-from ...data import Feature
+from ...data import Field
 
 
-def DSSM(features: Dict[str, Feature],
-         targets: Dict[str, Feature],
+def DSSM(features: Dict[str, Field],
+         targets: Dict[str, Field],
          text_embedder,
          mlp_num_layers: int = 3,
          mlp_num_units: int = 300,

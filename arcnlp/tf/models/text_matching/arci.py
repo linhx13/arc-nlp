@@ -5,11 +5,11 @@ from typing import Dict
 import tensorflow as tf
 
 from .. import utils
-from ...data import Feature
+from ...data import Field
 
 
-def ArcI(features: Dict[str, Feature],
-         targets: Dict[str, Feature],
+def ArcI(features: Dict[str, Field],
+         targets: Dict[str, Field],
          text_embedder,
          conv_pool_blocks: int = 2,
          conv_filters: int = 300,

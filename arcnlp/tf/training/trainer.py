@@ -10,12 +10,12 @@ import tensorflow as tf
 import numpy as np
 
 # from ..data import DataHandler, Dataset
-from ..data import DatasetBuilder
+from ..data import DataHandler
 from .. import utils
 
 logger = logging.getLogger(__name__)
 
-DATASET_BUILDER_FILE = "dataset_builder.pkl"
+DATA_HANDLER_FILE = "data_handler.pkl"
 MODEL_CONFIG_FILE = "model_config.json"
 MODEL_FILE = "model.h5"
 CHECKPOINT_MODEL_FILE = "model.epoch_{epoch:d}.h5"
@@ -26,14 +26,14 @@ class Trainer(object):
 
     def __init__(self,
                  model: tf.keras.models.Model,
-                 dataset_builder: DatasetBuilder):
+                 data_handler: DataHandler):
         self.model = model
-        self.dataset_builder = dataset_builder
+        self.data_handler = data_handler
 
     @classmethod
     def from_path(cls, path: str, epoch: int = None):
-        model, dataset_builder = load_model_data(path, epoch)
-        return cls(model, dataset_builder)
+        model, data_handler = load_model_data(path, epoch)
+        return cls(model, data_handler)
 
     def train(self,
               train_dataset: tf.data.Dataset,
@@ -54,20 +54,20 @@ class Trainer(object):
             utils.mkdir_p(model_dir)
 
         if model_dir:
-            with open(os.path.join(model_dir, DATASET_BUILDER_FILE), 'wb') as fp:
-                pickle.dump(self.dataset_builder, fp)
+            with open(os.path.join(model_dir, DATA_HANDLER_FILE), 'wb') as fp:
+                pickle.dump(self.data_handler, fp)
             with open(os.path.join(model_dir, MODEL_CONFIG_FILE), 'w') as fp:
                 fp.write(self.model.to_json())
 
-        train_data = self.dataset_builder.get_bucket_batches(
+        train_data = self.data_handler.get_bucket_iter(
             train_dataset, batch_size, train=True)
 
         if val_dataset:
-            val_data = self.dataset_builder.get_bucket_batches(
+            val_data = self.data_handler.get_bucket_iter(
                 val_dataset, batch_size, train=False)
-            fit_kwargs['validation_data'] = val_data
         else:
             val_data = None
+        fit_kwargs['validation_data'] = val_data
 
         callbacks = self._get_callbacks(val_metric, patience, model_dir)
         fit_kwargs.update({
@@ -86,9 +86,9 @@ class Trainer(object):
     def evaluate(self,
                  dataset: tf.data.Dataset,
                  batch_size: int = 32):
-        data, steps = self.dataset_builder.get_bucket_batches(
+        eval_data = self.data_handler.get_bucket_iter(
             dataset, batch_size, False)
-        score = self.model.evaluate(data)
+        score = self.model.evaluate(eval_data)
         return dict(zip(self.model.metrics_names, score))
 
     def _get_callbacks(self, val_metric, patience, model_dir):
@@ -116,10 +116,10 @@ class Trainer(object):
 
 
 def load_model_data(model_dir, epoch: int = None) \
-        -> Tuple[tf.keras.models.Model, DatasetBuilder]:
+        -> Tuple[tf.keras.models.Model, DataHandler]:
     logger.info("Loading data handler ...")
-    with open(os.path.join(model_dir, DATASET_BUILDER_FILE), 'rb') as fp:
-        dataset_builder = pickle.load(fp)
+    with open(os.path.join(model_dir, DATA_HANDLER_FILE), 'rb') as fp:
+        data_handler = pickle.load(fp)
     logger.info("Loading model ...")
     custom_objects = utils.get_custom_objects()
     if epoch is not None:
@@ -129,4 +129,4 @@ def load_model_data(model_dir, epoch: int = None) \
     model_file = os.path.join(model_dir, model_file)
     model = tf.keras.models.load_model(model_file, custom_objects)
     logger.info("Loading model from %s done" % model_file)
-    return model, dataset_builder
+    return model, data_handler

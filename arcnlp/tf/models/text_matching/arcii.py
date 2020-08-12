@@ -5,12 +5,12 @@ from typing import Dict, Iterable
 import tensorflow as tf
 
 from .. import utils
-from ...data import Feature
+from ...data import Field
 from ...layers import MatchingLayer
 
 
-def ArcII(features: Dict[str, Feature],
-          targets: Dict[str, Feature],
+def ArcII(features: Dict[str, Field],
+          targets: Dict[str, Field],
           text_embedder,
           conv_1d_filters: int = 300,
           conv_1d_kernel_size: int = 3,

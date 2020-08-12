@@ -5,12 +5,12 @@ from typing import Dict, Iterable
 import tensorflow as tf
 
 from .. import utils
-from ...data import Feature
+from ...data import Field
 from ...layers import MatchingLayer
 
 
-def MatchPyramid(features: Dict[str, Feature],
-                 targets: Dict[str, Feature],
+def MatchPyramid(features: Dict[str, Field],
+                 targets: Dict[str, Field],
                  text_embedder,
                  num_blocks: int = 3,
                  conv_filters: Iterable = [8, 16, 32],
