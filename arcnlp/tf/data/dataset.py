@@ -2,6 +2,15 @@
 
 
 class Dataset(object):
+
+    def __getitem__(self, idx):
+        raise NotImplementedError
+
+    def __len__(self):
+        raise NotImplementedError
+
+
+class OldDataset(object):
     """Defines a dataset composed of Examples along with its Fields.
 
     Attributes:

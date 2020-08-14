@@ -48,6 +48,7 @@ class TextField(Field):
         counter.update(tokens)
 
     def encode(self, x) -> np.array:
+        x = self._tokenize(x)
         tokens = self._pad(x)
         return np.array(self.vocab(tokens), dtype='int32')
 
@@ -64,14 +65,14 @@ class TextField(Field):
         return x
 
     def _pad(self, x):
-        tokens = self._tokenize(x)
+        tokens = x
         if self.max_len is None:
             return tokens
         max_len = self.max_len + (self.bos_token, self.eos_token).count(None) - 2
         if self.pad_first:
             padded = ([self.pad_token] * max(0, max_len - len(tokens))) \
                 + ([] if self.bos_token is None else [self.bos_token]) \
-                + (tokens[-max_len:] if self.truncate_first else tokens[:mx_len]) \
+                + (tokens[-max_len:] if self.truncate_first else tokens[:max_len]) \
                 + ([] if self.eos_token is None else [self.eos_token])
         else:
             padded = ([] if self.bos_token is None else [self.bos_token]) \
