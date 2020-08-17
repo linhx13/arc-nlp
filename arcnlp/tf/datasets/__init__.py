@@ -1,1 +1,2 @@
 from .text_classification import TextClassificationDataset
+from .sequence_tagging import SequenceTaggingDataset

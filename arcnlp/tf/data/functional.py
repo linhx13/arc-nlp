@@ -9,6 +9,20 @@ def vocab_func(vocab):
     return func
 
 
+def label_func(vocab, sparse=False):
+    def func(x):
+        if isinstance(x, list):
+            x = [vocab[t] for t in x]
+        else:
+            x = vocab[x]
+        if sparse:
+            return x
+        else:
+            return np.eye(len(vocab), dtype='int32')[x]
+
+    return func
+
+
 def totensor(dtype):
     def func(ids_list):
         return tf.convert_to_tensor(ids_list, dtype=dtype)
@@ -21,13 +35,5 @@ def sequential_transforms(*transforms):
         for transform in transforms:
             text_input = transform(text_input)
         return text_input
-
-    return func
-
-
-def label_func(vocab):
-    def func(x):
-        x = vocab[x]
-        return np.eye(len(vocab), dtype='int32')[x]
 
     return func

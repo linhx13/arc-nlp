@@ -1,4 +1,12 @@
 from ..data import Dataset
+from ..vocab import build_vocab_from_iterator
+
+
+def build_vocab(data, transforms):
+    tok_list = []
+    for _, txt in data:
+        tok_list.append(transforms(txt))
+    return build_vocab_from_iterator(tok_list)
 
 
 class TextClassificationDataset(Dataset):
@@ -21,6 +29,8 @@ class TextClassificationDataset(Dataset):
     def __getitem__(self, idx):
         label = self.data[idx][0]
         text = self.data[idx][1]
+        if idx % 1000 == 0:
+            print(idx)
         return (self.transforms[0](label), self.transforms[1](text))
 
     def __len__(self):
