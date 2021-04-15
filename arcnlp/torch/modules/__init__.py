@@ -1,1 +1,1 @@
-from .cnn_encoder import CnnEncoder
+from .cnn_encoder import CNNEncoder
