@@ -3,6 +3,8 @@ from collections import Counter
 import time
 from functools import partial
 
+import jieba
+import numpy as np
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
@@ -14,21 +16,19 @@ from torchtext.experimental.functional import (
     vocab_func,
     totensor,
 )
-from torchtext.vocab import Vocab, build_vocab_from_iterator
+from torchtext.vocab import Vocab, build_vocab_from_iterator, Vectors
 
-import pytorch_lightning as pl
-
-from arcnlp.torch.models import TextCNN, TextRNN
-import jieba
-import numpy as np
+from arcnlp.torch.models import *
+from arcnlp.torch.nn import BOWEncoder
 
 jieba.initialize()
 
 DATA_DIR = "/mnt/8f00be1b-84a6-4b38-8b59-47075910175b/datasets/THUCNews_small"
-
 train_path = os.path.expanduser(os.path.join(DATA_DIR, "train.txt"))
 valid_path = os.path.expanduser(os.path.join(DATA_DIR, "dev.txt"))
 class_path = os.path.expanduser(os.path.join(DATA_DIR, "class.txt"))
+
+embedding_path = "/mnt/8f00be1b-84a6-4b38-8b59-47075910175b/datasets/sgns.sogounews.bigram-char"
 
 
 def tokenizer(text):
@@ -41,6 +41,8 @@ def build_dataset(data_path, vocab):
         for line in fin:
             text, label = line.strip("\r\n").split("\t")
             examples.append((label, text))
+    # examples = examples[:2048]
+
     text_transform = sequential_transforms(tokenizer)
     if vocab is None:
         vocab = build_vocab_from_iterator(
@@ -70,11 +72,34 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 padding_idx = vocab["<pad>"]
 print("padding_idx", padding_idx)
 
-embedding = nn.Embedding(len(vocab), 300, padding_idx=padding_idx)
 
-model_cls = TextCNN
-# model_cls = TextRNN
-model = model_cls(embedding, len(class_list), padding_idx=padding_idx)
+vectors = Vectors(embedding_path)
+vocab.load_vectors(vectors)
+
+# embedding = nn.Embedding(len(vocab), 300, padding_idx=padding_idx)
+embedding = nn.Embedding.from_pretrained(
+    vocab.vectors, freeze=False, padding_idx=padding_idx
+)
+
+
+def build_model(arch, num_classes, embedding, padding_idx):
+    if arch == "BOW":
+        return TextClassifier(
+            num_classes,
+            embedding,
+            seq2vec_encoder=BOWEncoder(embedding.embedding_dim),
+            padding_idx=padding_idx,
+        )
+    elif arch == "TextCNN":
+        return TextCNN(num_classes, embedding, padding_idx=padding_idx)
+    elif arch == "TextRNN":
+        return TextRNN(num_classes, embedding, padding_idx=padding_idx)
+
+
+# arch = "BOW"
+# arch = "TextCNN"
+arch = "TextRNN"
+model = build_model(arch, len(class_list), embedding, padding_idx)
 
 
 def collate_fn(batch, padding_idx, max_len=None):
@@ -133,8 +158,8 @@ optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1, gamma=0.9)
 
 
-N_EPOCHS = 20
-BATCH_SIZE = 32
+N_EPOCHS = 10
+BATCH_SIZE = 128
 min_valid_loss = float("inf")
 
 train_dataloader = DataLoader(

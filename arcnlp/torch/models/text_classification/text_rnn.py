@@ -1,31 +1,37 @@
-from torch import nn
+import torch
+import torch.nn as nn
+
+from ...nn import RNNEncoder, LSTMEncoder, GRUEncoder
+from ...nn.utils import get_tokens_mask
 
 
 class TextRNN(nn.Module):
     def __init__(
         self,
-        embedder,
-        num_classes,
-        rnn_type="lstm",
-        hidden_size=128,
-        num_layers=2,
-        dropout=0.1,
-        padding_idx=0,
+        num_classes: int,
+        embedder: nn.Module,
+        rnn_type: str = "lstm",
+        hidden_size: int = 128,
+        num_layers: int = 2,
+        bidirectional: bool = True,
+        dropout: float = 0.1,
+        padding_idx: int = 0,
     ):
         super(TextRNN, self).__init__()
         self.embedder = embedder
-        if rnn_type == "lstm":
-            rnn_cls = nn.LSTM
+        if rnn_type == "rnn":
+            encoder_cls = RNN
+        elif rnn_type == "lstm":
+            encoder_cls = LSTMEncoder
         elif rnn_type == "gru":
-            rnn_cls = nn.GRU
+            encoder_cls = GRUEncoder
         else:
             raise ValueError("rnn_type %s is invalid" % rnn_type)
-        self.encoder = rnn_cls(
+        self.encoder = encoder_cls(
             embedder.embedding_dim,
             hidden_size=hidden_size,
             num_layers=num_layers,
-            batch_first=True,
-            bidirectional=True,
+            bidirectional=bidirectional,
             dropout=dropout,
         )
         if dropout:
@@ -33,12 +39,12 @@ class TextRNN(nn.Module):
         else:
             self.dropout = None
         self.fc = nn.Linear(hidden_size * 2, num_classes)
+        self.padding_idx = padding_idx
 
-    def forward(self, tokens):
-        # TODO: pack_padded_sequence
+    def forward(self, tokens: torch.Tensor) -> torch.Tensor:
+        mask = get_tokens_mask(tokens, padding_idx=self.padding_idx)
         embedded = self.embedder(tokens)
-        encoded, _ = self.encoder(embedded)
-        encoded = encoded[:, -1, :]
+        encoded = self.encoder(embedded, mask=mask)
         if self.dropout:
             encoded = self.dropout(encoded)
         return self.fc(encoded)
