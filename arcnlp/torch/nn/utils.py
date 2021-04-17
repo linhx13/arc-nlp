@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 
 
 def get_tokens_mask(tokens: torch.Tensor, padding_idx=0) -> torch.BoolTensor:
@@ -44,6 +45,17 @@ def masked_mean(
     )
 
 
+def masked_softmax(
+    tensor: torch.Tensor, mask: torch.BoolTensor, dim: int = -1
+) -> torch.Tensor:
+    if mask is None:
+        return F.softmax(tensor, dim=dim)
+    while mask.dim() < tensor.dim():
+        mask = mask.unsqueeze(1)
+    masked_tensor = tensor.masked_fill(~mask, min_value_of_dtype(tensor.dtype))
+    return F.softmax(masked_tensor, dim=dim)
+
+
 def tiny_value_of_dtype(dtype: torch.dtype):
     if not dtype.is_floating_point:
         raise TypeError("Only supports floating point dtypes.")
@@ -53,3 +65,20 @@ def tiny_value_of_dtype(dtype: torch.dtype):
         return 1e-4
     else:
         raise TypeError("Does not support dtype " + str(dtype))
+
+
+def info_value_of_dtype(dtype: torch.dtype):
+    if dtype == torch.bool:
+        raise TypeError("Does not support torch.bool")
+    elif dtype.is_floating_point:
+        return torch.finfo(dtype)
+    else:
+        return torch.iinfo(dtype)
+
+
+def min_value_of_dtype(dtype: torch.dtype):
+    return info_value_of_dtype(dtype).min
+
+
+def max_value_of_dtype(dtype: torch.dtype):
+    return info_value_of_dtype(dtype).max

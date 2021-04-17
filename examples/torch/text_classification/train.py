@@ -36,7 +36,7 @@ MAX_EPOCHS = 10
 BATCH_SIZE = 128
 FASTTEXT_NGRAMS_BUCKETS = 100000
 
-ARCH = "FastText"
+ARCH = "TextRNNAttn"
 
 
 def build_model(arch, num_classes, vocab, embedding_path=None):
@@ -70,6 +70,8 @@ def build_model(arch, num_classes, vocab, embedding_path=None):
         )
         ngrams_embedding.weight.data[: len(vocab)] = embedding.weight.data
         return FastText(num_classes, ngrams_embedding, padding_idx=padding_idx)
+    elif arch == "TextRNNAttn":
+        return TextRNNAttn(num_classes, embedding, padding_idx=padding_idx)
 
 
 def tokenizer(text):
