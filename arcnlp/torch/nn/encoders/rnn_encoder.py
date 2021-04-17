@@ -13,10 +13,12 @@ class _RNNBaseEncoder(nn.Module):
         self.module = module
         self.return_sequences = return_sequences
 
-    def get_input_dim(self) -> int:
+    @property
+    def input_dim(self) -> int:
         return self.module.input_size
 
-    def get_output_dim(self) -> int:
+    @property
+    def output_dim(self) -> int:
         return self.module.hidden_size * (
             2 if self.module.bidirectional else 1
         )
@@ -51,7 +53,7 @@ class _RNNBaseEncoder(nn.Module):
             state = state.transpose(0, 1)
             num_directions = 2 if self.module.bidirectional else 1
             last_state = state[:, -num_directions:, :]
-            return last_state.contiguous().view([-1, self.get_output_dim()])
+            return last_state.contiguous().view([-1, self.output_dim])
 
 
 class RNNEncoder(_RNNBaseEncoder):

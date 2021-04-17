@@ -29,7 +29,7 @@ class TextCNN(nn.Module):
         else:
             self.dropout = None
         self.padding_idx = 0
-        self.fc = nn.Linear(self.encoder.get_output_dim(), num_classes)
+        self.fc = nn.Linear(self.encoder.output_dim, num_classes)
 
     def forward(self, tokens: torch.Tensor) -> torch.Tensor:
         mask = get_tokens_mask(tokens, self.padding_idx)

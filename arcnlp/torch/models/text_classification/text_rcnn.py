@@ -1,10 +1,11 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from ...nn.utils import get_tokens_mask, get_rnn_encoder
 
 
-class TextRNN(nn.Module):
+class TextRCNN(nn.Module):
     def __init__(
         self,
         num_classes: int,
@@ -16,7 +17,7 @@ class TextRNN(nn.Module):
         dropout: float = 0.1,
         padding_idx: int = 0,
     ):
-        super(TextRNN, self).__init__()
+        super(TextRCNN, self).__init__()
         self.embedder = embedder
         self.encoder = get_rnn_encoder(
             rnn_type,
@@ -25,18 +26,25 @@ class TextRNN(nn.Module):
             num_layers=num_layers,
             bidirectional=bidirectional,
             dropout=dropout,
+            return_sequences=True,
         )
         if dropout:
             self.dropout = nn.Dropout(dropout)
         else:
             self.dropout = None
-        self.fc = nn.Linear(self.encoder.output_dim, num_classes)
+        self.fc = nn.Linear(
+            embedder.embedding_dim + self.encoder.output_dim, num_classes
+        )
         self.padding_idx = padding_idx
 
     def forward(self, tokens: torch.Tensor) -> torch.Tensor:
         mask = get_tokens_mask(tokens, padding_idx=self.padding_idx)
         embedded = self.embedder(tokens)
         encoded = self.encoder(embedded, mask=mask)
+        out = torch.cat((embedded, encoded), 2)
+        out = F.relu(out)
+        out = out.permute(0, 2, 1)
+        out = F.max_pool1d(out, out.size(2)).squeeze()
         if self.dropout:
-            encoded = self.dropout(encoded)
-        return self.fc(encoded)
+            out = self.dropout(out)
+        return self.fc(out)

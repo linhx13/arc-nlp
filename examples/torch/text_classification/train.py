@@ -94,6 +94,8 @@ def build_model(arch, num_classes, embedding, padding_idx):
         return TextCNN(num_classes, embedding, padding_idx=padding_idx)
     elif arch == "TextRNN":
         return TextRNN(num_classes, embedding, padding_idx=padding_idx)
+    elif arch == "TextRCNN":
+        return TextRCNN(num_classes, embedding, padding_idx=padding_idx)
 
 
 # arch = "BOW"

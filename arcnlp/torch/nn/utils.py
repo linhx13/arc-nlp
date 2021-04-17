@@ -18,3 +18,13 @@ def get_sequence_mask(
 
 def get_sequence_lengths(mask: torch.BoolTensor) -> torch.LongTensor:
     return mask.sum(-1)
+
+
+def get_rnn_encoder(rnn_type, **kwargs):
+    from ..nn import RNNEncoder, LSTMEncoder, GRUEncoder
+
+    mapping = {"rnn": RNNEncoder, "lstm": LSTMEncoder, "gru": GRUEncoder}
+    encoder_cls = mapping.get(rnn_type)
+    if rnn_type is None:
+        raise ValueError(f"rnn_type {rnn_type} is invalid")
+    return encoder_cls(**kwargs)

@@ -36,12 +36,6 @@ class CNNEncoder(nn.Module):
             self.projection_layer = None
             self.output_dim = maxpool_output_dim
 
-    def get_input_dim(self) -> int:
-        return self.input_dim
-
-    def get_output_dim(self) -> int:
-        return self.output_dim
-
     def forward(
         self, inputs: torch.Tensor, mask: torch.BoolTensor = None
     ) -> torch.Tensor:
