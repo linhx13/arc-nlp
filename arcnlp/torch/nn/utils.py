@@ -28,3 +28,28 @@ def get_rnn_encoder(rnn_type, **kwargs):
     if rnn_type is None:
         raise ValueError(f"rnn_type {rnn_type} is invalid")
     return encoder_cls(**kwargs)
+
+
+def masked_mean(
+    tensor: torch.Tensor,
+    mask: torch.BoolTensor,
+    dim: int,
+    keepdim: bool = False,
+) -> torch.Tensor:
+    replaced_tensor = tensor.masked_fill(~mask, 0.0)
+    value_sum = torch.sum(replaced_tensor, dim=dim, keepdim=keepdim)
+    value_count = torch.sum(mask, dim=dim, keepdim=keepdim)
+    return value_sum / value_count.float().clamp(
+        min=tiny_value_of_dtype(torch.float)
+    )
+
+
+def tiny_value_of_dtype(dtype: torch.dtype):
+    if not dtype.is_floating_point:
+        raise TypeError("Only supports floating point dtypes.")
+    if dtype == torch.float or dtype == torch.double:
+        return 1e-13
+    elif dtype == torch.half:
+        return 1e-4
+    else:
+        raise TypeError("Does not support dtype " + str(dtype))

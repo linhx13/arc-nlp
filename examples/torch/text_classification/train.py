@@ -14,8 +14,10 @@ from torchtext.experimental.functional import (
     sequential_transforms,
     vocab_func,
     totensor,
+    ngrams_func,
 )
 from torchtext.vocab import Vocab, build_vocab_from_iterator, Vectors
+from torchtext.data.utils import ngrams_iterator
 
 from arcnlp.torch.models import *
 
@@ -32,42 +34,9 @@ EMBEDDING_PATH = "/mnt/8f00be1b-84a6-4b38-8b59-47075910175b/datasets/sgns.sogoun
 
 MAX_EPOCHS = 10
 BATCH_SIZE = 128
+FASTTEXT_NGRAMS_BUCKETS = 100000
 
-ARCH = "TextRCNN"
-
-
-def tokenizer(text):
-    return jieba.lcut(text)
-
-
-def build_dataset(data_path, vocab):
-    examples = []
-    with open(data_path) as fin:
-        for line in fin:
-            text, label = line.strip("\r\n").split("\t")
-            examples.append((label, text))
-    # examples = examples[:2048]
-
-    text_transform = sequential_transforms(tokenizer)
-    if vocab is None:
-        vocab = build_vocab_from_iterator(
-            text_transform(text) for _, text in examples
-        )
-
-    label_transform = sequential_transforms(int)
-    text_transform = sequential_transforms(text_transform, vocab_func(vocab))
-    dataset = TextClassificationDataset(
-        examples, vocab, (label_transform, text_transform)
-    )
-    return dataset
-
-
-def load_data(train_path, valid_path, class_path):
-    train_dataset = build_dataset(train_path, vocab=None)
-    valid_dataset = build_dataset(valid_path, vocab=train_dataset.get_vocab())
-    with open(class_path) as fin:
-        class_list = [line.strip() for line in fin]
-    return train_dataset, valid_dataset, class_list
+ARCH = "FastText"
 
 
 def build_model(arch, num_classes, vocab, embedding_path=None):
@@ -95,6 +64,74 @@ def build_model(arch, num_classes, vocab, embedding_path=None):
         return TextRNN(num_classes, embedding, padding_idx=padding_idx)
     elif arch == "TextRCNN":
         return TextRCNN(num_classes, embedding, padding_idx=padding_idx)
+    elif arch == "FastText":
+        ngrams_embedding = nn.Embedding(
+            len(vocab) + FASTTEXT_NGRAMS_BUCKETS, 300, padding_idx=padding_idx
+        )
+        ngrams_embedding.weight.data[: len(vocab)] = embedding.weight.data
+        return FastText(num_classes, ngrams_embedding, padding_idx=padding_idx)
+
+
+def tokenizer(text):
+    return jieba.lcut(text)
+
+
+def ngrams_hash(buckets, base=0):
+    def bigram_hash(ids, t):
+        x1 = ids[t - 1] if t - 1 >= 0 else 0
+        return (x1 * 14918087 + ids[t]) % buckets + base
+
+    def trigram_hash(ids, t):
+        x1 = ids[t - 1] if t - 1 >= 0 else 0
+        x2 = ids[t - 2] if t - 2 >= 0 else 0
+        return (
+            x2 * 14918087 * 18408749 + x1 * 14918087 + ids[t]
+        ) % buckets + base
+
+    def func(ids):
+        ngrams = ids[:]
+        for t in range(len(ids)):
+            ngrams.append(bigram_hash(ids, t))
+            ngrams.append(trigram_hash(ids, t))
+        return ngrams
+
+    return func
+
+
+def build_dataset(data_path, vocab):
+    examples = []
+    with open(data_path) as fin:
+        for line in fin:
+            text, label = line.strip("\r\n").split("\t")
+            examples.append((label, text))
+    # examples = examples[:2048]
+
+    text_transform = sequential_transforms(tokenizer)
+    if vocab is None:
+        vocab = build_vocab_from_iterator(
+            text_transform(text) for _, text in examples
+        )
+
+    label_transform = sequential_transforms(int)
+    text_transform = sequential_transforms(text_transform, vocab_func(vocab))
+    if ARCH == "FastText":
+        text_transform = sequential_transforms(
+            text_transform,
+            ngrams_hash(buckets=FASTTEXT_NGRAMS_BUCKETS, base=len(vocab)),
+        )
+
+    dataset = TextClassificationDataset(
+        examples, vocab, (label_transform, text_transform)
+    )
+    return dataset
+
+
+def load_data(train_path, valid_path, class_path):
+    train_dataset = build_dataset(train_path, vocab=None)
+    valid_dataset = build_dataset(valid_path, vocab=train_dataset.get_vocab())
+    with open(class_path) as fin:
+        class_list = [line.strip() for line in fin]
+    return train_dataset, valid_dataset, class_list
 
 
 def collate_fn(batch, padding_idx, max_len=None):
